@@ -51,42 +51,46 @@ export const extractPoster = createServerFn({ method: "POST" })
 
 export const generateEmail = createServerFn({ method: "POST" })
   .inputValidator((d: {
-    lead: Record<string, unknown>;
+    leadJson: string;
     tone?: string;
-    agency?: { name?: string; phone?: string; email?: string };
+    agencyName?: string;
+    agencyPhone?: string;
+    agencyEmail?: string;
   }) =>
     z.object({
-      lead: z.record(z.string(), z.unknown()),
+      leadJson: z.string().min(2).max(20000),
       tone: z.string().optional(),
-      agency: z.object({
-        name: z.string().optional(),
-        phone: z.string().optional(),
-        email: z.string().optional(),
-      }).optional(),
+      agencyName: z.string().optional(),
+      agencyPhone: z.string().optional(),
+      agencyEmail: z.string().optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
     const tone = data.tone ?? "professional, persuasive, modern digital agency";
-    const agency = data.agency ?? {};
+    const agency = {
+      name: data.agencyName ?? "MA Digital Marketing Agency",
+      phone: data.agencyPhone ?? "+923343233883",
+      email: data.agencyEmail ?? "",
+    };
     const json = await callAI({
       model: "google/gemini-2.5-flash",
       messages: [
         {
           role: "system",
           content:
-            "You write cold outreach emails for a digital marketing agency offering: social media post design, 30-day content strategy, Facebook & Instagram management, story creation, Facebook cover redesign, logo redesign, analytics & engagement, lead generation, branding consultation. Output ONLY valid JSON: {subject, body}. Body should use plain text with line breaks and ✅ bullets, end with the agency contact block.",
+            "You write cold outreach emails for a digital marketing agency offering: social media post design, 30-day content strategy, Facebook & Instagram management, story creation, Facebook cover redesign, logo redesign, analytics & engagement, lead generation, branding consultation. Output ONLY valid JSON: {\"subject\":string, \"body\":string}. Body uses plain text with line breaks and ✅ bullets, ends with the agency contact block (📞 phone, 📧 email).",
         },
         {
           role: "user",
-          content: `Lead JSON:\n${JSON.stringify(data.lead)}\n\nAgency: ${JSON.stringify(agency)}\nTone: ${tone}\nWrite a personalized outreach email referencing their business specifically.`,
+          content: `Lead JSON:\n${data.leadJson}\n\nAgency: ${JSON.stringify(agency)}\nTone: ${tone}\nWrite a personalized outreach email referencing their business specifically.`,
         },
       ],
       response_format: { type: "json_object" },
     });
-    const content = json.choices?.[0]?.message?.content ?? "{}";
+    const content: string = json.choices?.[0]?.message?.content ?? "{}";
     try {
-      const p = JSON.parse(content);
-      return { subject: String(p.subject ?? ""), body: String(p.body ?? "") };
+      const p = JSON.parse(content) as { subject?: unknown; body?: unknown };
+      return { subject: String(p.subject ?? "Grow your business with us"), body: String(p.body ?? "") };
     } catch {
       return { subject: "Grow your business with us", body: content };
     }
