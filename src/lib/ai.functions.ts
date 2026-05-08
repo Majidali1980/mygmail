@@ -45,10 +45,8 @@ export const extractPoster = createServerFn({ method: "POST" })
       ],
       response_format: { type: "json_object" },
     });
-    const content = json.choices?.[0]?.message?.content ?? "{}";
-    let parsed: Record<string, unknown> = {};
-    try { parsed = JSON.parse(content); } catch { parsed = { raw: content }; }
-    return parsed;
+    const content: string = json.choices?.[0]?.message?.content ?? "{}";
+    return { json: content };
   });
 
 export const generateEmail = createServerFn({ method: "POST" })
