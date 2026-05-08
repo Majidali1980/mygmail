@@ -14,7 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      email_sends: {
+        Row: {
+          body: string
+          error: string | null
+          gmail_message_id: string | null
+          id: string
+          lead_id: string | null
+          recipient: string
+          sent_at: string
+          status: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          error?: string | null
+          gmail_message_id?: string | null
+          id?: string
+          lead_id?: string | null
+          recipient: string
+          sent_at?: string
+          status?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          error?: string | null
+          gmail_message_id?: string | null
+          id?: string
+          lead_id?: string | null
+          recipient?: string
+          sent_at?: string
+          status?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sends_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_emails: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          lead_id: string | null
+          subject: string
+          tone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          subject: string
+          tone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          subject?: string
+          tone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_emails_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          branding: Json | null
+          business_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          poster_url: string | null
+          raw_extraction: Json | null
+          services: string[] | null
+          social_links: Json | null
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          branding?: Json | null
+          business_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          poster_url?: string | null
+          raw_extraction?: Json | null
+          services?: string[] | null
+          social_links?: Json | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          branding?: Json | null
+          business_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          poster_url?: string | null
+          raw_extraction?: Json | null
+          services?: string[] | null
+          social_links?: Json | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          agency_email: string | null
+          agency_name: string | null
+          agency_phone: string | null
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_email?: string | null
+          agency_name?: string | null
+          agency_phone?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_email?: string | null
+          agency_name?: string | null
+          agency_phone?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +200,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      lead_status:
+        | "new"
+        | "sent"
+        | "replied"
+        | "interested"
+        | "follow_up"
+        | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +333,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      lead_status: [
+        "new",
+        "sent",
+        "replied",
+        "interested",
+        "follow_up",
+        "closed",
+      ],
+    },
   },
 } as const
