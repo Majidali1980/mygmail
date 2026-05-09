@@ -369,7 +369,8 @@ function Dashboard() {
               )}
             </div>
           )}
-
+          <Button
+            onClick={handleSend}
             disabled={busy || !recipient || !subject || !body}
             className="mt-4 w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
           >
