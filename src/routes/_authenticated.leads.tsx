@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { Database } from "@/integrations/supabase/types";
+import { Button } from "@/components/ui/button";
+import { ScheduleFollowupDialog } from "@/components/ScheduleFollowupDialog";
+import { Clock } from "lucide-react";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type Status = Database["public"]["Enums"]["lead_status"];
