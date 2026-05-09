@@ -4,13 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { extractPoster, generateEmail } from "@/lib/ai.functions";
+import { generatePosterImage } from "@/lib/poster.functions";
 import { sendGmail } from "@/lib/gmail.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Upload, Sparkles, Send, Loader2, Image as ImageIcon } from "lucide-react";
+import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X } from "lucide-react";
+
+type PosterTpl = { id: string; name: string; prompt_template: string };
+type GenPoster = { id: string; storage_path: string; dataUrl?: string };
 
 // Note: not under _authenticated/ folder for simplicity — guard inline.
 export const Route = createFileRoute("/_authenticated/dashboard")({
