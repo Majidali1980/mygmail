@@ -61,6 +61,57 @@ export type Database = {
           },
         ]
       }
+      follow_ups: {
+        Row: {
+          attachments: Json
+          body: string
+          created_at: string
+          error: string | null
+          gmail_message_id: string | null
+          id: string
+          lead_id: string | null
+          recipient: string
+          scheduled_for: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["follow_up_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json
+          body: string
+          created_at?: string
+          error?: string | null
+          gmail_message_id?: string | null
+          id?: string
+          lead_id?: string | null
+          recipient: string
+          scheduled_for: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["follow_up_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attachments?: Json
+          body?: string
+          created_at?: string
+          error?: string | null
+          gmail_message_id?: string | null
+          id?: string
+          lead_id?: string | null
+          recipient?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["follow_up_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generated_emails: {
         Row: {
           body: string
@@ -98,6 +149,44 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generated_posters: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string | null
+          prompt: string
+          storage_path: string
+          template_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          prompt: string
+          storage_path: string
+          template_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          prompt?: string
+          storage_path?: string
+          template_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_posters_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "poster_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -156,6 +245,36 @@ export type Database = {
         }
         Relationships: []
       }
+      poster_templates: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          prompt_template: string
+          source_path: string | null
+          style_json: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          prompt_template: string
+          source_path?: string | null
+          style_json?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          prompt_template?: string
+          source_path?: string | null
+          style_json?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           agency_email: string | null
@@ -200,6 +319,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      follow_up_status: "pending" | "sent" | "failed" | "cancelled"
       lead_status:
         | "new"
         | "sent"
@@ -334,6 +454,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      follow_up_status: ["pending", "sent", "failed", "cancelled"],
       lead_status: [
         "new",
         "sent",
