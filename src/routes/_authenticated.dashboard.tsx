@@ -38,6 +38,7 @@ function Dashboard() {
   const extractFn = useServerFn(extractPoster);
   const generateFn = useServerFn(generateEmail);
   const sendFn = useServerFn(sendGmail);
+  const genPosterFn = useServerFn(generatePosterImage);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -47,11 +48,26 @@ function Dashboard() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [step, setStep] = useState<"idle" | "extracting" | "generating" | "sending">("idle");
+  const [step, setStep] = useState<"idle" | "extracting" | "generating" | "sending" | "poster">("idle");
+
+  const [templates, setTemplates] = useState<PosterTpl[]>([]);
+  const [pickedTemplate, setPickedTemplate] = useState<string>("");
+  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string }[]>([]);
 
   useEffect(() => {
     if (!loading && !session) window.location.href = "/login";
   }, [loading, session]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("poster_templates").select("id,name,prompt_template").order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const list = (data ?? []) as PosterTpl[];
+        setTemplates(list);
+        if (list.length && !pickedTemplate) setPickedTemplate(list[0].id);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   if (loading || !session) return <div className="p-10 text-muted-foreground">Loading…</div>;
 
