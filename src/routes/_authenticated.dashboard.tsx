@@ -163,11 +163,54 @@ function Dashboard() {
     }
   }
 
+  async function handleGeneratePoster() {
+    if (!user || !extraction || !pickedTemplate) return;
+    const tpl = templates.find((t) => t.id === pickedTemplate);
+    if (!tpl) { toast.error("Pick a poster template first"); return; }
+    setStep("poster");
+    try {
+      const res = await genPosterFn({
+        data: {
+          promptTemplate: tpl.prompt_template,
+          business_name: extraction.business_name ?? undefined,
+          services: extraction.services?.join(", ") ?? undefined,
+          phone: extraction.contact_phone ?? undefined,
+          website: extraction.website ?? undefined,
+        },
+      });
+      // upload to storage + persist
+      const base64 = res.dataUrl.split(",")[1];
+      const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      const path = `${user.id}/generated/${leadId ?? "free"}/${Date.now()}.png`;
+      await supabase.storage.from("posters").upload(path, bin, { upsert: true, contentType: "image/png" });
+      await supabase.from("generated_posters").insert({
+        user_id: user.id, lead_id: leadId, template_id: pickedTemplate,
+        prompt: res.prompt, storage_path: path,
+      });
+      const id = crypto.randomUUID();
+      setAttachments((a) => [...a, { id, name: `poster-${a.length + 1}.png`, dataBase64: base64, previewUrl: res.dataUrl }]);
+      toast.success("Personalized poster ready & attached");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setStep("idle");
+    }
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments((a) => a.filter((x) => x.id !== id));
+  }
+
   async function handleSend() {
     if (!recipient || !subject || !body || !user) return;
     setStep("sending");
     try {
-      const res = await sendFn({ data: { to: recipient, subject, body } });
+      const res = await sendFn({
+        data: {
+          to: recipient, subject, body,
+          attachments: attachments.map((a) => ({ filename: a.name, mimeType: "image/png", dataBase64: a.dataBase64 })),
+        },
+      });
       await supabase.from("email_sends").insert({
         user_id: user.id, lead_id: leadId, recipient, subject, body,
         gmail_message_id: res.id, status: "sent",
