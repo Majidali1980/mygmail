@@ -28,6 +28,7 @@ const STATUSES: Status[] = ["new", "sent", "replied", "interested", "follow_up",
 function LeadsPage() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [scheduling, setScheduling] = useState<Lead | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -51,11 +52,12 @@ function LeadsPage() {
               <th className="p-4">Contact</th>
               <th className="p-4">Status</th>
               <th className="p-4">Created</th>
+              <th className="p-4"></th>
             </tr>
           </thead>
           <tbody>
             {leads.length === 0 && (
-              <tr><td colSpan={4} className="p-10 text-center text-muted-foreground">No leads yet — upload a poster on the Dashboard.</td></tr>
+              <tr><td colSpan={5} className="p-10 text-center text-muted-foreground">No leads yet — upload a poster on the Dashboard.</td></tr>
             )}
             {leads.map((l) => (
               <tr key={l.id} className="border-b border-border/50 hover:bg-card/40">
@@ -77,11 +79,26 @@ function LeadsPage() {
                   </select>
                 </td>
                 <td className="p-4 text-xs text-muted-foreground">{new Date(l.created_at).toLocaleDateString()}</td>
+                <td className="p-4 text-right">
+                  <Button
+                    size="sm" variant="ghost"
+                    disabled={!l.contact_email}
+                    onClick={() => setScheduling(l)}
+                  >
+                    <Clock className="h-3 w-3 mr-1" /> Follow-up
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <ScheduleFollowupDialog
+        open={!!scheduling}
+        onOpenChange={(b) => !b && setScheduling(null)}
+        lead={scheduling}
+      />
     </div>
   );
 }
