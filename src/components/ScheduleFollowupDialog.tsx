@@ -221,5 +221,3 @@ export function ScheduleFollowupDialog({ open, onOpenChange, lead }: Props) {
     </Dialog>
   );
 }
-
-import { Clock } from "lucide-react";
