@@ -326,8 +326,50 @@ function Dashboard() {
             </div>
           </div>
 
-          <Button
-            onClick={handleSend}
+          {/* Personalized poster */}
+          {extraction && (
+            <div className="mt-4 rounded-lg border border-border/60 bg-background/30 p-3">
+              <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Wand2 className="h-3 w-3 text-primary" /> Attach AI poster for this lead
+              </div>
+              {templates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No templates yet — add one in <a className="underline" href="/posters">Poster Studio</a>.
+                </p>
+              ) : (
+                <div className="flex gap-2">
+                  <select
+                    value={pickedTemplate}
+                    onChange={(e) => setPickedTemplate(e.target.value)}
+                    className="flex-1 rounded-md border border-input bg-transparent px-2 py-1 text-xs"
+                  >
+                    {templates.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
+                  </select>
+                  <Button size="sm" variant="outline" onClick={handleGeneratePoster} disabled={busy || !pickedTemplate}>
+                    {step === "poster" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                    Generate
+                  </Button>
+                </div>
+              )}
+              {attachments.length > 0 && (
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {attachments.map((a) => (
+                    <div key={a.id} className="relative">
+                      <img src={a.previewUrl} alt="" className="aspect-square w-full rounded-md object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(a.id)}
+                        className="absolute -top-1 -right-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
             disabled={busy || !recipient || !subject || !body}
             className="mt-4 w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
           >
