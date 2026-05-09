@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { LayoutDashboard, Users, Inbox, Settings, Sparkles, LogOut, Send } from "lucide-react";
+import { LayoutDashboard, Users, Inbox, Settings, Sparkles, LogOut, Send, Clock, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated")({
