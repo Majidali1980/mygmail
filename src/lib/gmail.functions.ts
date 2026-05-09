@@ -1,49 +1,31 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { sendGmailRaw, gmailHeaders } from "./gmail.server";
 
 const GMAIL_BASE = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
 
-function gmailHeaders() {
-  const lk = process.env.LOVABLE_API_KEY;
-  const gk = process.env.GOOGLE_MAIL_API_KEY;
-  if (!lk) throw new Error("Missing LOVABLE_API_KEY");
-  if (!gk) throw new Error("Missing GOOGLE_MAIL_API_KEY");
-  return {
-    Authorization: `Bearer ${lk}`,
-    "X-Connection-Api-Key": gk,
-    "Content-Type": "application/json",
-  };
-}
-
-function b64url(s: string) {
-  return Buffer.from(s, "utf-8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
+const attachmentSchema = z.object({
+  filename: z.string().min(1).max(200),
+  mimeType: z.string().min(1).max(120),
+  dataBase64: z.string().min(1),
+});
 
 export const sendGmail = createServerFn({ method: "POST" })
-  .inputValidator((d: { to: string; subject: string; body: string }) =>
+  .inputValidator((d: {
+    to: string;
+    subject: string;
+    body: string;
+    attachments?: { filename: string; mimeType: string; dataBase64: string }[];
+  }) =>
     z.object({
       to: z.string().email(),
       subject: z.string().min(1).max(300),
-      body: z.string().min(1).max(20000),
+      body: z.string().min(1).max(50000),
+      attachments: z.array(attachmentSchema).max(5).optional(),
     }).parse(d),
   )
   .handler(async ({ data }) => {
-    const mime = [
-      `To: ${data.to}`,
-      `Subject: ${data.subject}`,
-      'Content-Type: text/plain; charset="UTF-8"',
-      "",
-      data.body,
-    ].join("\r\n");
-
-    const res = await fetch(`${GMAIL_BASE}/users/me/messages/send`, {
-      method: "POST",
-      headers: gmailHeaders(),
-      body: JSON.stringify({ raw: b64url(mime) }),
-    });
-    const out = await res.json();
-    if (!res.ok) throw new Error(`Gmail send failed [${res.status}]: ${JSON.stringify(out)}`);
-    return { id: out.id as string, threadId: out.threadId as string };
+    return sendGmailRaw(data);
   });
 
 export const listInbox = createServerFn({ method: "GET" })

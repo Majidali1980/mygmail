@@ -4,13 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { extractPoster, generateEmail } from "@/lib/ai.functions";
+import { generatePosterImage } from "@/lib/poster.functions";
 import { sendGmail } from "@/lib/gmail.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Upload, Sparkles, Send, Loader2, Image as ImageIcon } from "lucide-react";
+import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X } from "lucide-react";
+
+type PosterTpl = { id: string; name: string; prompt_template: string };
+type GenPoster = { id: string; storage_path: string; dataUrl?: string };
 
 // Note: not under _authenticated/ folder for simplicity — guard inline.
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -34,6 +38,7 @@ function Dashboard() {
   const extractFn = useServerFn(extractPoster);
   const generateFn = useServerFn(generateEmail);
   const sendFn = useServerFn(sendGmail);
+  const genPosterFn = useServerFn(generatePosterImage);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -43,11 +48,26 @@ function Dashboard() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [step, setStep] = useState<"idle" | "extracting" | "generating" | "sending">("idle");
+  const [step, setStep] = useState<"idle" | "extracting" | "generating" | "sending" | "poster">("idle");
+
+  const [templates, setTemplates] = useState<PosterTpl[]>([]);
+  const [pickedTemplate, setPickedTemplate] = useState<string>("");
+  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string }[]>([]);
 
   useEffect(() => {
     if (!loading && !session) window.location.href = "/login";
   }, [loading, session]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("poster_templates").select("id,name,prompt_template").order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const list = (data ?? []) as PosterTpl[];
+        setTemplates(list);
+        if (list.length && !pickedTemplate) setPickedTemplate(list[0].id);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   if (loading || !session) return <div className="p-10 text-muted-foreground">Loading…</div>;
 
@@ -143,11 +163,54 @@ function Dashboard() {
     }
   }
 
+  async function handleGeneratePoster() {
+    if (!user || !extraction || !pickedTemplate) return;
+    const tpl = templates.find((t) => t.id === pickedTemplate);
+    if (!tpl) { toast.error("Pick a poster template first"); return; }
+    setStep("poster");
+    try {
+      const res = await genPosterFn({
+        data: {
+          promptTemplate: tpl.prompt_template,
+          business_name: extraction.business_name ?? undefined,
+          services: extraction.services?.join(", ") ?? undefined,
+          phone: extraction.contact_phone ?? undefined,
+          website: extraction.website ?? undefined,
+        },
+      });
+      // upload to storage + persist
+      const base64 = res.dataUrl.split(",")[1];
+      const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      const path = `${user.id}/generated/${leadId ?? "free"}/${Date.now()}.png`;
+      await supabase.storage.from("posters").upload(path, bin, { upsert: true, contentType: "image/png" });
+      await supabase.from("generated_posters").insert({
+        user_id: user.id, lead_id: leadId, template_id: pickedTemplate,
+        prompt: res.prompt, storage_path: path,
+      });
+      const id = crypto.randomUUID();
+      setAttachments((a) => [...a, { id, name: `poster-${a.length + 1}.png`, dataBase64: base64, previewUrl: res.dataUrl }]);
+      toast.success("Personalized poster ready & attached");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setStep("idle");
+    }
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments((a) => a.filter((x) => x.id !== id));
+  }
+
   async function handleSend() {
     if (!recipient || !subject || !body || !user) return;
     setStep("sending");
     try {
-      const res = await sendFn({ data: { to: recipient, subject, body } });
+      const res = await sendFn({
+        data: {
+          to: recipient, subject, body,
+          attachments: attachments.map((a) => ({ filename: a.name, mimeType: "image/png", dataBase64: a.dataBase64 })),
+        },
+      });
       await supabase.from("email_sends").insert({
         user_id: user.id, lead_id: leadId, recipient, subject, body,
         gmail_message_id: res.id, status: "sent",
@@ -263,6 +326,49 @@ function Dashboard() {
             </div>
           </div>
 
+          {/* Personalized poster */}
+          {extraction && (
+            <div className="mt-4 rounded-lg border border-border/60 bg-background/30 p-3">
+              <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Wand2 className="h-3 w-3 text-primary" /> Attach AI poster for this lead
+              </div>
+              {templates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No templates yet — add one in <a className="underline" href="/posters">Poster Studio</a>.
+                </p>
+              ) : (
+                <div className="flex gap-2">
+                  <select
+                    value={pickedTemplate}
+                    onChange={(e) => setPickedTemplate(e.target.value)}
+                    className="flex-1 rounded-md border border-input bg-transparent px-2 py-1 text-xs"
+                  >
+                    {templates.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
+                  </select>
+                  <Button size="sm" variant="outline" onClick={handleGeneratePoster} disabled={busy || !pickedTemplate}>
+                    {step === "poster" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                    Generate
+                  </Button>
+                </div>
+              )}
+              {attachments.length > 0 && (
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {attachments.map((a) => (
+                    <div key={a.id} className="relative">
+                      <img src={a.previewUrl} alt="" className="aspect-square w-full rounded-md object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(a.id)}
+                        className="absolute -top-1 -right-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <Button
             onClick={handleSend}
             disabled={busy || !recipient || !subject || !body}

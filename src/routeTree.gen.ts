@@ -14,9 +14,12 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as AuthenticatedSentRouteImport } from './routes/_authenticated.sent'
+import { Route as AuthenticatedPostersRouteImport } from './routes/_authenticated.posters'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated.leads'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated.inbox'
+import { Route as AuthenticatedFollowupsRouteImport } from './routes/_authenticated.followups'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as ApiPublicHooksRunFollowupsRouteImport } from './routes/api/public/hooks/run-followups'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -42,6 +45,11 @@ const AuthenticatedSentRoute = AuthenticatedSentRouteImport.update({
   path: '/sent',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPostersRoute = AuthenticatedPostersRouteImport.update({
+  id: '/posters',
+  path: '/posters',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -52,29 +60,46 @@ const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedFollowupsRoute = AuthenticatedFollowupsRouteImport.update({
+  id: '/followups',
+  path: '/followups',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicHooksRunFollowupsRoute =
+  ApiPublicHooksRunFollowupsRouteImport.update({
+    id: '/api/public/hooks/run-followups',
+    path: '/api/public/hooks/run-followups',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/followups': typeof AuthenticatedFollowupsRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/posters': typeof AuthenticatedPostersRoute
   '/sent': typeof AuthenticatedSentRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/api/public/hooks/run-followups': typeof ApiPublicHooksRunFollowupsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/followups': typeof AuthenticatedFollowupsRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/posters': typeof AuthenticatedPostersRoute
   '/sent': typeof AuthenticatedSentRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/api/public/hooks/run-followups': typeof ApiPublicHooksRunFollowupsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -82,10 +107,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/followups': typeof AuthenticatedFollowupsRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
+  '/_authenticated/posters': typeof AuthenticatedPostersRoute
   '/_authenticated/sent': typeof AuthenticatedSentRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/api/public/hooks/run-followups': typeof ApiPublicHooksRunFollowupsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -93,35 +121,45 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
+    | '/followups'
     | '/inbox'
     | '/leads'
+    | '/posters'
     | '/sent'
     | '/settings'
+    | '/api/public/hooks/run-followups'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/dashboard'
+    | '/followups'
     | '/inbox'
     | '/leads'
+    | '/posters'
     | '/sent'
     | '/settings'
+    | '/api/public/hooks/run-followups'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/dashboard'
+    | '/_authenticated/followups'
     | '/_authenticated/inbox'
     | '/_authenticated/leads'
+    | '/_authenticated/posters'
     | '/_authenticated/sent'
     | '/_authenticated/settings'
+    | '/api/public/hooks/run-followups'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicHooksRunFollowupsRoute: typeof ApiPublicHooksRunFollowupsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -161,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSentRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/posters': {
+      id: '/_authenticated/posters'
+      path: '/posters'
+      fullPath: '/posters'
+      preLoaderRoute: typeof AuthenticatedPostersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/leads': {
       id: '/_authenticated/leads'
       path: '/leads'
@@ -175,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInboxRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/followups': {
+      id: '/_authenticated/followups'
+      path: '/followups'
+      fullPath: '/followups'
+      preLoaderRoute: typeof AuthenticatedFollowupsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -182,21 +234,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/hooks/run-followups': {
+      id: '/api/public/hooks/run-followups'
+      path: '/api/public/hooks/run-followups'
+      fullPath: '/api/public/hooks/run-followups'
+      preLoaderRoute: typeof ApiPublicHooksRunFollowupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFollowupsRoute: typeof AuthenticatedFollowupsRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
+  AuthenticatedPostersRoute: typeof AuthenticatedPostersRoute
   AuthenticatedSentRoute: typeof AuthenticatedSentRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFollowupsRoute: AuthenticatedFollowupsRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
+  AuthenticatedPostersRoute: AuthenticatedPostersRoute,
   AuthenticatedSentRoute: AuthenticatedSentRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
@@ -209,17 +272,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicHooksRunFollowupsRoute: ApiPublicHooksRunFollowupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { LayoutDashboard, Users, Inbox, Settings, Sparkles, LogOut, Send } from "lucide-react";
+import { LayoutDashboard, Users, Inbox, Settings, Sparkles, LogOut, Send, Clock, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -28,6 +28,8 @@ function AuthLayout() {
   const nav = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/leads", icon: Users, label: "Leads" },
+    { to: "/posters", icon: ImageIcon, label: "Posters" },
+    { to: "/followups", icon: Clock, label: "Follow-ups" },
     { to: "/sent", icon: Send, label: "Sent" },
     { to: "/inbox", icon: Inbox, label: "Inbox" },
     { to: "/settings", icon: Settings, label: "Settings" },
