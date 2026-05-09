@@ -9,7 +9,7 @@ import { generateEmail } from "@/lib/ai.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Image as ImageIcon, X } from "lucide-react";
+import { Loader2, Sparkles, Image as ImageIcon, X, Clock } from "lucide-react";
 
 type Lead = {
   id: string;
