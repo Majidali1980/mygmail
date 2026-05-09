@@ -28,6 +28,8 @@ function AuthLayout() {
   const nav = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/leads", icon: Users, label: "Leads" },
+    { to: "/posters", icon: ImageIcon, label: "Posters" },
+    { to: "/followups", icon: Clock, label: "Follow-ups" },
     { to: "/sent", icon: Send, label: "Sent" },
     { to: "/inbox", icon: Inbox, label: "Inbox" },
     { to: "/settings", icon: Settings, label: "Settings" },
