@@ -172,6 +172,14 @@ function Dashboard() {
     if (!tpl) { toast.error("Pick a poster template first"); return; }
     setStep("poster");
     try {
+      // resolve reference image (signed URL) for higher-fidelity style transfer
+      let referenceImageUrl: string | undefined;
+      if (tpl.source_path) {
+        const { data: s } = await supabase.storage.from("posters").createSignedUrl(tpl.source_path, 3600);
+        referenceImageUrl = s?.signedUrl ?? undefined;
+      }
+      const { data: profile } = await supabase
+        .from("profiles").select("agency_email").eq("user_id", user.id).maybeSingle();
       const res = await genPosterFn({
         data: {
           promptTemplate: tpl.prompt_template,
@@ -179,20 +187,26 @@ function Dashboard() {
           services: extraction.services?.join(", ") ?? undefined,
           phone: extraction.contact_phone ?? undefined,
           website: extraction.website ?? undefined,
+          agency_email: profile?.agency_email ?? user.email ?? undefined,
+          format: posterFormat,
+          referenceImageUrl,
         },
       });
-      // upload to storage + persist
       const base64 = res.dataUrl.split(",")[1];
       const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-      const path = `${user.id}/generated/${leadId ?? "free"}/${Date.now()}.png`;
+      const path = `${user.id}/generated/${leadId ?? "free"}/${Date.now()}-${posterFormat}.png`;
       await supabase.storage.from("posters").upload(path, bin, { upsert: true, contentType: "image/png" });
       await supabase.from("generated_posters").insert({
         user_id: user.id, lead_id: leadId, template_id: pickedTemplate,
         prompt: res.prompt, storage_path: path,
       });
       const id = crypto.randomUUID();
-      setAttachments((a) => [...a, { id, name: `poster-${a.length + 1}.png`, dataBase64: base64, previewUrl: res.dataUrl }]);
-      toast.success("Personalized poster ready & attached");
+      const suffix = posterFormat === "facebook_cover" ? "fb-cover" : "poster";
+      setAttachments((a) => [...a, {
+        id, name: `${suffix}-${a.length + 1}.png`, dataBase64: base64,
+        previewUrl: res.dataUrl, templateName: tpl.name, format: posterFormat,
+      }]);
+      toast.success(`${posterFormat === "facebook_cover" ? "Facebook cover" : "Poster"} ready & attached`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
