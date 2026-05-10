@@ -354,18 +354,28 @@ function Dashboard() {
                   No templates yet — add one in <a className="underline" href="/posters">Poster Studio</a>.
                 </p>
               ) : (
-                <div className="flex gap-2">
-                  <select
-                    value={pickedTemplate}
-                    onChange={(e) => setPickedTemplate(e.target.value)}
-                    className="flex-1 rounded-md border border-input bg-transparent px-2 py-1 text-xs"
-                  >
-                    {templates.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
-                  </select>
-                  <Button size="sm" variant="outline" onClick={handleGeneratePoster} disabled={busy || !pickedTemplate}>
-                    {step === "poster" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
-                    Generate
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <select
+                      value={pickedTemplate}
+                      onChange={(e) => setPickedTemplate(e.target.value)}
+                      className="flex-1 rounded-md border border-input bg-transparent px-2 py-1 text-xs"
+                    >
+                      {templates.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
+                    </select>
+                    <select
+                      value={posterFormat}
+                      onChange={(e) => setPosterFormat(e.target.value as PosterFormat)}
+                      className="rounded-md border border-input bg-transparent px-2 py-1 text-xs"
+                    >
+                      <option value="poster" className="bg-background">Poster (1:1)</option>
+                      <option value="facebook_cover" className="bg-background">FB cover (16:9)</option>
+                    </select>
+                    <Button size="sm" variant="outline" onClick={handleGeneratePoster} disabled={busy || !pickedTemplate}>
+                      {step === "poster" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                      Generate
+                    </Button>
+                  </div>
                 </div>
               )}
               {attachments.length > 0 && (
@@ -373,6 +383,9 @@ function Dashboard() {
                   {attachments.map((a) => (
                     <div key={a.id} className="relative">
                       <img src={a.previewUrl} alt="" className="aspect-square w-full rounded-md object-cover" />
+                      <div className="mt-1 truncate text-[10px] text-muted-foreground">
+                        {a.format === "facebook_cover" ? "FB" : "Poster"} · {a.templateName ?? "tpl"}
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeAttachment(a.id)}
@@ -387,16 +400,27 @@ function Dashboard() {
             </div>
           )}
           <Button
-            onClick={handleSend}
+            onClick={() => setPreviewOpen(true)}
             disabled={busy || !recipient || !subject || !body}
             className="mt-4 w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
           >
-            {step === "sending" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-            Send via Gmail
+            <Eye className="mr-2 h-4 w-4" />
+            Preview &amp; send
           </Button>
-          <p className="mt-2 text-center text-xs text-muted-foreground">Sent from your connected Gmail account</p>
+          <p className="mt-2 text-center text-xs text-muted-foreground">Review the email and attachments before it leaves your Gmail</p>
         </div>
       </div>
+
+      <EmailPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        to={recipient}
+        subject={subject}
+        body={body}
+        attachments={attachments.map((a) => ({ id: a.id, name: a.name, previewUrl: a.previewUrl }))}
+        busy={step === "sending"}
+        onConfirm={async () => { await handleSend(); setPreviewOpen(false); }}
+      />
     </div>
   );
 }
