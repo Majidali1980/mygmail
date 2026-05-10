@@ -53,7 +53,9 @@ function Dashboard() {
 
   const [templates, setTemplates] = useState<PosterTpl[]>([]);
   const [pickedTemplate, setPickedTemplate] = useState<string>("");
-  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string }[]>([]);
+  const [posterFormat, setPosterFormat] = useState<PosterFormat>("poster");
+  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string; templateName?: string; format?: PosterFormat }[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) window.location.href = "/login";
