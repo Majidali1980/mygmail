@@ -11,10 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X } from "lucide-react";
+import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X, Eye } from "lucide-react";
+import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
 
-type PosterTpl = { id: string; name: string; prompt_template: string };
-type GenPoster = { id: string; storage_path: string; dataUrl?: string };
+type PosterTpl = { id: string; name: string; prompt_template: string; source_path: string | null };
+type PosterFormat = "poster" | "facebook_cover";
 
 // Note: not under _authenticated/ folder for simplicity — guard inline.
 export const Route = createFileRoute("/_authenticated/dashboard")({
