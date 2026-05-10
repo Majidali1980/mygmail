@@ -63,7 +63,7 @@ function Dashboard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("poster_templates").select("id,name,prompt_template").order("created_at", { ascending: false })
+    supabase.from("poster_templates").select("id,name,prompt_template,source_path").order("created_at", { ascending: false })
       .then(({ data }) => {
         const list = (data ?? []) as PosterTpl[];
         setTemplates(list);
