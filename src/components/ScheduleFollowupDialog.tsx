@@ -47,6 +47,7 @@ export function ScheduleFollowupDialog({ open, onOpenChange, lead }: Props) {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!open || !lead) return;
