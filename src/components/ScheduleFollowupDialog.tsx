@@ -9,7 +9,8 @@ import { generateEmail } from "@/lib/ai.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Image as ImageIcon, X, Clock } from "lucide-react";
+import { Loader2, Sparkles, Image as ImageIcon, X, Clock, Eye } from "lucide-react";
+import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
 
 type Lead = {
   id: string;
@@ -46,6 +47,7 @@ export function ScheduleFollowupDialog({ open, onOpenChange, lead }: Props) {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!open || !lead) return;
@@ -212,12 +214,37 @@ export function ScheduleFollowupDialog({ open, onOpenChange, lead }: Props) {
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}><X className="h-4 w-4 mr-1" />Cancel</Button>
-          <Button onClick={schedule} disabled={busy} className="bg-gradient-primary text-primary-foreground hover:opacity-90">
-            {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Clock />}
-            Schedule
+          <Button
+            onClick={() => {
+              if (!recipient || !subject || !body || !when) { toast.error("All fields are required"); return; }
+              setPreviewOpen(true);
+            }}
+            disabled={busy}
+            className="bg-gradient-primary text-primary-foreground hover:opacity-90"
+          >
+            <Eye className="h-4 w-4 mr-1" /> Preview &amp; schedule
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <EmailPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        to={recipient}
+        subject={subject}
+        body={body}
+        scheduledFor={when ? new Date(when).toISOString() : null}
+        attachments={picked
+          .map((id) => posters.find((p) => p.id === id))
+          .filter((p): p is Poster => !!p)
+          .map((p) => ({
+            id: p.id,
+            name: p.storage_path.split("/").pop() ?? "poster.png",
+            previewUrl: posterUrls[p.id] ?? "",
+          }))}
+        busy={busy}
+        onConfirm={async () => { await schedule(); setPreviewOpen(false); }}
+      />
     </Dialog>
   );
 }

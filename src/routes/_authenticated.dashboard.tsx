@@ -11,10 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X } from "lucide-react";
+import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X, Eye } from "lucide-react";
+import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
 
-type PosterTpl = { id: string; name: string; prompt_template: string };
-type GenPoster = { id: string; storage_path: string; dataUrl?: string };
+type PosterTpl = { id: string; name: string; prompt_template: string; source_path: string | null };
+type PosterFormat = "poster" | "facebook_cover";
 
 // Note: not under _authenticated/ folder for simplicity — guard inline.
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -52,7 +53,9 @@ function Dashboard() {
 
   const [templates, setTemplates] = useState<PosterTpl[]>([]);
   const [pickedTemplate, setPickedTemplate] = useState<string>("");
-  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string }[]>([]);
+  const [posterFormat, setPosterFormat] = useState<PosterFormat>("poster");
+  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string; templateName?: string; format?: PosterFormat }[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) window.location.href = "/login";
@@ -60,7 +63,7 @@ function Dashboard() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("poster_templates").select("id,name,prompt_template").order("created_at", { ascending: false })
+    supabase.from("poster_templates").select("id,name,prompt_template,source_path").order("created_at", { ascending: false })
       .then(({ data }) => {
         const list = (data ?? []) as PosterTpl[];
         setTemplates(list);
@@ -169,6 +172,14 @@ function Dashboard() {
     if (!tpl) { toast.error("Pick a poster template first"); return; }
     setStep("poster");
     try {
+      // resolve reference image (signed URL) for higher-fidelity style transfer
+      let referenceImageUrl: string | undefined;
+      if (tpl.source_path) {
+        const { data: s } = await supabase.storage.from("posters").createSignedUrl(tpl.source_path, 3600);
+        referenceImageUrl = s?.signedUrl ?? undefined;
+      }
+      const { data: profile } = await supabase
+        .from("profiles").select("agency_email").eq("user_id", user.id).maybeSingle();
       const res = await genPosterFn({
         data: {
           promptTemplate: tpl.prompt_template,
@@ -176,20 +187,26 @@ function Dashboard() {
           services: extraction.services?.join(", ") ?? undefined,
           phone: extraction.contact_phone ?? undefined,
           website: extraction.website ?? undefined,
+          agency_email: profile?.agency_email ?? user.email ?? undefined,
+          format: posterFormat,
+          referenceImageUrl,
         },
       });
-      // upload to storage + persist
       const base64 = res.dataUrl.split(",")[1];
       const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-      const path = `${user.id}/generated/${leadId ?? "free"}/${Date.now()}.png`;
+      const path = `${user.id}/generated/${leadId ?? "free"}/${Date.now()}-${posterFormat}.png`;
       await supabase.storage.from("posters").upload(path, bin, { upsert: true, contentType: "image/png" });
       await supabase.from("generated_posters").insert({
         user_id: user.id, lead_id: leadId, template_id: pickedTemplate,
         prompt: res.prompt, storage_path: path,
       });
       const id = crypto.randomUUID();
-      setAttachments((a) => [...a, { id, name: `poster-${a.length + 1}.png`, dataBase64: base64, previewUrl: res.dataUrl }]);
-      toast.success("Personalized poster ready & attached");
+      const suffix = posterFormat === "facebook_cover" ? "fb-cover" : "poster";
+      setAttachments((a) => [...a, {
+        id, name: `${suffix}-${a.length + 1}.png`, dataBase64: base64,
+        previewUrl: res.dataUrl, templateName: tpl.name, format: posterFormat,
+      }]);
+      toast.success(`${posterFormat === "facebook_cover" ? "Facebook cover" : "Poster"} ready & attached`);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -337,18 +354,28 @@ function Dashboard() {
                   No templates yet — add one in <a className="underline" href="/posters">Poster Studio</a>.
                 </p>
               ) : (
-                <div className="flex gap-2">
-                  <select
-                    value={pickedTemplate}
-                    onChange={(e) => setPickedTemplate(e.target.value)}
-                    className="flex-1 rounded-md border border-input bg-transparent px-2 py-1 text-xs"
-                  >
-                    {templates.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
-                  </select>
-                  <Button size="sm" variant="outline" onClick={handleGeneratePoster} disabled={busy || !pickedTemplate}>
-                    {step === "poster" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
-                    Generate
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <select
+                      value={pickedTemplate}
+                      onChange={(e) => setPickedTemplate(e.target.value)}
+                      className="flex-1 rounded-md border border-input bg-transparent px-2 py-1 text-xs"
+                    >
+                      {templates.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
+                    </select>
+                    <select
+                      value={posterFormat}
+                      onChange={(e) => setPosterFormat(e.target.value as PosterFormat)}
+                      className="rounded-md border border-input bg-transparent px-2 py-1 text-xs"
+                    >
+                      <option value="poster" className="bg-background">Poster (1:1)</option>
+                      <option value="facebook_cover" className="bg-background">FB cover (16:9)</option>
+                    </select>
+                    <Button size="sm" variant="outline" onClick={handleGeneratePoster} disabled={busy || !pickedTemplate}>
+                      {step === "poster" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                      Generate
+                    </Button>
+                  </div>
                 </div>
               )}
               {attachments.length > 0 && (
@@ -356,6 +383,9 @@ function Dashboard() {
                   {attachments.map((a) => (
                     <div key={a.id} className="relative">
                       <img src={a.previewUrl} alt="" className="aspect-square w-full rounded-md object-cover" />
+                      <div className="mt-1 truncate text-[10px] text-muted-foreground">
+                        {a.format === "facebook_cover" ? "FB" : "Poster"} · {a.templateName ?? "tpl"}
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeAttachment(a.id)}
@@ -370,16 +400,27 @@ function Dashboard() {
             </div>
           )}
           <Button
-            onClick={handleSend}
+            onClick={() => setPreviewOpen(true)}
             disabled={busy || !recipient || !subject || !body}
             className="mt-4 w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
           >
-            {step === "sending" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-            Send via Gmail
+            <Eye className="mr-2 h-4 w-4" />
+            Preview &amp; send
           </Button>
-          <p className="mt-2 text-center text-xs text-muted-foreground">Sent from your connected Gmail account</p>
+          <p className="mt-2 text-center text-xs text-muted-foreground">Review the email and attachments before it leaves your Gmail</p>
         </div>
       </div>
+
+      <EmailPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        to={recipient}
+        subject={subject}
+        body={body}
+        attachments={attachments.map((a) => ({ id: a.id, name: a.name, previewUrl: a.previewUrl }))}
+        busy={step === "sending"}
+        onConfirm={async () => { await handleSend(); setPreviewOpen(false); }}
+      />
     </div>
   );
 }
