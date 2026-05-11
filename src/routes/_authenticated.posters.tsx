@@ -442,6 +442,9 @@ function PostersPage() {
                 <div className="text-[10px] text-muted-foreground truncate">
                   {tpl?.name ?? "—"} · {new Date(g.created_at).toLocaleDateString()}
                 </div>
+                <Button size="sm" variant="outline" className="mt-2 w-full h-7 text-xs" onClick={() => downloadFromPath(g.storage_path)}>
+                  <Download className="h-3 w-3 mr-1" /> Download attachment
+                </Button>
               </div>
             </div>
           );
