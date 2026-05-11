@@ -488,6 +488,45 @@ function PostersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* View template details */}
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{viewing?.name ?? "Template"}</DialogTitle>
+          </DialogHeader>
+          {viewing && (
+            <div className="space-y-3">
+              {tplUrls[viewing.id] && (
+                <img src={tplUrls[viewing.id]} alt="" className="max-h-64 w-full rounded-lg object-contain bg-background/40" />
+              )}
+              <div>
+                <Label>Style analysis</Label>
+                <pre className="mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background/30 p-3 text-xs">
+{JSON.stringify(viewing.style_json ?? {}, null, 2)}
+                </pre>
+              </div>
+              <div>
+                <Label>Prompt template</Label>
+                <Textarea readOnly value={viewing.prompt_template} rows={10} className="font-mono text-xs" />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setPickedTemplate(viewing.id); setViewing(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                  <Sparkles className="h-4 w-4 mr-1" /> Use this template
+                </Button>
+                {viewing.source_path && (
+                  <Button variant="outline" size="sm" onClick={() => downloadFromPath(viewing.source_path!)}>
+                    <Download className="h-4 w-4 mr-1" /> Download source
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setViewing(null)}><X className="h-4 w-4 mr-1" />Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
