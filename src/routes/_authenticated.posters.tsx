@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Image as ImageIcon, Sparkles, Loader2, Upload, Trash2, Pencil, RefreshCw, Save, X } from "lucide-react";
+import { Image as ImageIcon, Sparkles, Loader2, Upload, Trash2, Pencil, RefreshCw, Save, X, Eye, Download, Paperclip } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/posters")({
   head: () => ({ meta: [{ title: "Poster Studio — AI Outreach Studio" }] }),
@@ -65,6 +65,26 @@ function PostersPage() {
   const [editName, setEditName] = useState("");
   const [editPrompt, setEditPrompt] = useState("");
   const [editBusy, setEditBusy] = useState(false);
+
+  // view dialog
+  const [viewing, setViewing] = useState<Template | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<string | null>(null);
+
+  function downloadDataUrl(dataUrl: string, filename: string) {
+    const a = document.createElement("a");
+    a.href = dataUrl; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  async function downloadFromPath(path: string) {
+    const { data, error } = await supabase.storage.from("posters").download(path);
+    if (error || !data) { toast.error(error?.message ?? "Download failed"); return; }
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url; a.download = path.split("/").pop() ?? "poster.png";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -168,6 +188,7 @@ function PostersPage() {
         },
       });
       setPreviewImg(res.dataUrl);
+      setLastPrompt(res.prompt);
 
       const base64 = res.dataUrl.split(",")[1];
       const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -292,6 +313,30 @@ function PostersPage() {
                 <option value="">Select a template…</option>
                 {templates.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
               </select>
+              {pickedTemplate && (() => {
+                const tpl = templates.find((t) => t.id === pickedTemplate);
+                if (!tpl) return null;
+                const styleEntries = Object.entries(tpl.style_json ?? {});
+                return (
+                  <div className="mt-2 rounded-md border border-border bg-background/30 p-3 text-xs">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="font-medium">Analysis details</span>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setViewing(tpl)}>
+                        <Eye className="h-3 w-3 mr-1" /> View full
+                      </Button>
+                    </div>
+                    {styleEntries.length === 0 ? (
+                      <p className="text-muted-foreground">No structured style data.</p>
+                    ) : (
+                      <ul className="space-y-0.5 text-muted-foreground max-h-32 overflow-y-auto">
+                        {styleEntries.slice(0, 6).map(([k, v]) => (
+                          <li key={k}><span className="text-foreground">{k}:</span> {Array.isArray(v) ? v.join(", ") : String(v).slice(0, 120)}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -325,7 +370,23 @@ function PostersPage() {
               Generate {posterFormat === "facebook_cover" ? "Facebook cover" : "poster"}
             </Button>
             {previewImg && (
-              <img src={previewImg} alt="generated" className="mt-3 w-full rounded-lg" />
+              <div className="mt-3 space-y-2">
+                <img src={previewImg} alt="generated" className="w-full rounded-lg" />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => downloadDataUrl(previewImg, `poster-${Date.now()}.png`)}>
+                    <Download className="h-4 w-4 mr-1" /> Download
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => { void navigator.clipboard.writeText(previewImg); toast.success("Image data URL copied"); }}>
+                    <Paperclip className="h-4 w-4 mr-1" /> Copy data URL
+                  </Button>
+                </div>
+                {lastPrompt && (
+                  <details className="rounded-md border border-border bg-background/30 p-2 text-xs">
+                    <summary className="cursor-pointer font-medium">Generation prompt &amp; analysis used</summary>
+                    <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-muted-foreground">{lastPrompt}</pre>
+                  </details>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -344,6 +405,12 @@ function PostersPage() {
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm font-medium truncate">{t.name}</div>
                 <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" onClick={() => setViewing(t)} title="View details">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => { setPickedTemplate(t.id); window.scrollTo({ top: 0, behavior: "smooth" }); }} title="Use to generate">
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
                   <Button size="icon" variant="ghost" onClick={() => openEdit(t)} title="Edit / regenerate">
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -375,6 +442,9 @@ function PostersPage() {
                 <div className="text-[10px] text-muted-foreground truncate">
                   {tpl?.name ?? "—"} · {new Date(g.created_at).toLocaleDateString()}
                 </div>
+                <Button size="sm" variant="outline" className="mt-2 w-full h-7 text-xs" onClick={() => downloadFromPath(g.storage_path)}>
+                  <Download className="h-3 w-3 mr-1" /> Download attachment
+                </Button>
               </div>
             </div>
           );
@@ -415,6 +485,45 @@ function PostersPage() {
               {editBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
               Save changes
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View template details */}
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{viewing?.name ?? "Template"}</DialogTitle>
+          </DialogHeader>
+          {viewing && (
+            <div className="space-y-3">
+              {tplUrls[viewing.id] && (
+                <img src={tplUrls[viewing.id]} alt="" className="max-h-64 w-full rounded-lg object-contain bg-background/40" />
+              )}
+              <div>
+                <Label>Style analysis</Label>
+                <pre className="mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background/30 p-3 text-xs">
+{JSON.stringify(viewing.style_json ?? {}, null, 2)}
+                </pre>
+              </div>
+              <div>
+                <Label>Prompt template</Label>
+                <Textarea readOnly value={viewing.prompt_template} rows={10} className="font-mono text-xs" />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setPickedTemplate(viewing.id); setViewing(null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                  <Sparkles className="h-4 w-4 mr-1" /> Use this template
+                </Button>
+                {viewing.source_path && (
+                  <Button variant="outline" size="sm" onClick={() => downloadFromPath(viewing.source_path!)}>
+                    <Download className="h-4 w-4 mr-1" /> Download source
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setViewing(null)}><X className="h-4 w-4 mr-1" />Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
