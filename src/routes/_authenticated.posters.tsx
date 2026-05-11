@@ -370,7 +370,23 @@ function PostersPage() {
               Generate {posterFormat === "facebook_cover" ? "Facebook cover" : "poster"}
             </Button>
             {previewImg && (
-              <img src={previewImg} alt="generated" className="mt-3 w-full rounded-lg" />
+              <div className="mt-3 space-y-2">
+                <img src={previewImg} alt="generated" className="w-full rounded-lg" />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => downloadDataUrl(previewImg, `poster-${Date.now()}.png`)}>
+                    <Download className="h-4 w-4 mr-1" /> Download
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => { void navigator.clipboard.writeText(previewImg); toast.success("Image data URL copied"); }}>
+                    <Paperclip className="h-4 w-4 mr-1" /> Copy data URL
+                  </Button>
+                </div>
+                {lastPrompt && (
+                  <details className="rounded-md border border-border bg-background/30 p-2 text-xs">
+                    <summary className="cursor-pointer font-medium">Generation prompt &amp; analysis used</summary>
+                    <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-muted-foreground">{lastPrompt}</pre>
+                  </details>
+                )}
+              </div>
             )}
           </div>
         </div>
