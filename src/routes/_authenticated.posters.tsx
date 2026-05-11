@@ -405,6 +405,12 @@ function PostersPage() {
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm font-medium truncate">{t.name}</div>
                 <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" onClick={() => setViewing(t)} title="View details">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => { setPickedTemplate(t.id); window.scrollTo({ top: 0, behavior: "smooth" }); }} title="Use to generate">
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
                   <Button size="icon" variant="ghost" onClick={() => openEdit(t)} title="Edit / regenerate">
                     <Pencil className="h-4 w-4" />
                   </Button>
