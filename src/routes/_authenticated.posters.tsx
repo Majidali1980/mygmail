@@ -188,6 +188,7 @@ function PostersPage() {
         },
       });
       setPreviewImg(res.dataUrl);
+      setLastPrompt(res.prompt);
 
       const base64 = res.dataUrl.split(",")[1];
       const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
