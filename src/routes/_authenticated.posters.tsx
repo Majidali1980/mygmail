@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Image as ImageIcon, Sparkles, Loader2, Upload, Trash2, Pencil, RefreshCw, Save, X } from "lucide-react";
+import { Image as ImageIcon, Sparkles, Loader2, Upload, Trash2, Pencil, RefreshCw, Save, X, Eye, Download, Paperclip } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/posters")({
   head: () => ({ meta: [{ title: "Poster Studio — AI Outreach Studio" }] }),
