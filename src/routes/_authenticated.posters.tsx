@@ -313,6 +313,30 @@ function PostersPage() {
                 <option value="">Select a template…</option>
                 {templates.map((t) => <option key={t.id} value={t.id} className="bg-background">{t.name}</option>)}
               </select>
+              {pickedTemplate && (() => {
+                const tpl = templates.find((t) => t.id === pickedTemplate);
+                if (!tpl) return null;
+                const styleEntries = Object.entries(tpl.style_json ?? {});
+                return (
+                  <div className="mt-2 rounded-md border border-border bg-background/30 p-3 text-xs">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="font-medium">Analysis details</span>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setViewing(tpl)}>
+                        <Eye className="h-3 w-3 mr-1" /> View full
+                      </Button>
+                    </div>
+                    {styleEntries.length === 0 ? (
+                      <p className="text-muted-foreground">No structured style data.</p>
+                    ) : (
+                      <ul className="space-y-0.5 text-muted-foreground max-h-32 overflow-y-auto">
+                        {styleEntries.slice(0, 6).map(([k, v]) => (
+                          <li key={k}><span className="text-foreground">{k}:</span> {Array.isArray(v) ? v.join(", ") : String(v).slice(0, 120)}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
