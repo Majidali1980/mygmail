@@ -66,6 +66,26 @@ function PostersPage() {
   const [editPrompt, setEditPrompt] = useState("");
   const [editBusy, setEditBusy] = useState(false);
 
+  // view dialog
+  const [viewing, setViewing] = useState<Template | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<string | null>(null);
+
+  function downloadDataUrl(dataUrl: string, filename: string) {
+    const a = document.createElement("a");
+    a.href = dataUrl; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  async function downloadFromPath(path: string) {
+    const { data, error } = await supabase.storage.from("posters").download(path);
+    if (error || !data) { toast.error(error?.message ?? "Download failed"); return; }
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url; a.download = path.split("/").pop() ?? "poster.png";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   useEffect(() => {
     if (!user) return;
     void refresh();
