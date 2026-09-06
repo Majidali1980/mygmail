@@ -383,8 +383,35 @@ function Dashboard() {
 
           <div className="space-y-3">
             <div>
-              <Label htmlFor="to">To</Label>
-              <Input id="to" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="recipient@example.com" />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="to">{bulkMode ? "Recipients (bulk)" : "To"}</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setBulkMode((b) => !b)}
+                >
+                  {bulkMode ? "Single recipient" : "Bulk send (up to 100)"}
+                </Button>
+              </div>
+              {bulkMode ? (
+                <>
+                  <Textarea
+                    id="to"
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    rows={4}
+                    placeholder="Paste emails separated by comma, space or new line…"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {bulkRecipients.length} valid recipient{bulkRecipients.length === 1 ? "" : "s"} · each gets a separate
+                    private email — no one sees the rest of the list.
+                  </p>
+                </>
+              ) : (
+                <Input id="to" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="recipient@example.com" />
+              )}
             </div>
             <div>
               <Label htmlFor="subj">Subject</Label>
