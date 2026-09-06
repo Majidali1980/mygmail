@@ -57,6 +57,18 @@ function Dashboard() {
   const [posterFormat, setPosterFormat] = useState<PosterFormat>("poster");
   const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string; templateName?: string; format?: PosterFormat }[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const bulkRecipients = Array.from(
+    new Set(
+      bulkText
+        .split(/[\s,;]+/)
+        .map((s) => s.trim().toLowerCase())
+        .filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)),
+    ),
+  ).slice(0, 100);
 
   useEffect(() => {
     if (!loading && !session) window.location.href = "/login";
