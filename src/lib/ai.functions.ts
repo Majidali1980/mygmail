@@ -95,3 +95,51 @@ export const generateEmail = createServerFn({ method: "POST" })
       return { subject: "Grow your business with us", body: content };
     }
   });
+
+// Draft an email body from just a subject line (no poster needed).
+export const draftFromSubject = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    subject: string;
+    agencyName?: string;
+    agencyPhone?: string;
+    agencyEmail?: string;
+  }) =>
+    z.object({
+      subject: z.string().min(3).max(300),
+      agencyName: z.string().optional(),
+      agencyPhone: z.string().optional(),
+      agencyEmail: z.string().optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const agency = {
+      name: data.agencyName ?? "MA Digital Marketing Agency",
+      phone: data.agencyPhone ?? "+923343233883",
+      email: data.agencyEmail ?? "",
+    };
+    const json = await callAI({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write cold outreach emails for a digital marketing agency offering: social media post design, 30-day content strategy, Facebook & Instagram management, story creation, Facebook cover redesign, logo redesign, analytics & engagement, lead generation, branding consultation. Given ONLY the email subject the user wrote, infer the intent and write a matching body. Output ONLY valid JSON: {\"subject\":string, \"body\":string}. Keep the subject close to the user's wording (you may polish it). Body uses plain text with line breaks and ✅ bullets, ends with the agency contact block (📞 phone, 📧 email).",
+        },
+        {
+          role: "user",
+          content: `Subject: ${data.subject}\nAgency: ${JSON.stringify(agency)}\nWrite the email body for this subject.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+    const content: string = json.choices?.[0]?.message?.content ?? "{}";
+    try {
+      const p = JSON.parse(content) as { subject?: unknown; body?: unknown };
+      return {
+        subject: String(p.subject ?? data.subject),
+        body: String(p.body ?? ""),
+      };
+    } catch {
+      return { subject: data.subject, body: content };
+    }
+  });

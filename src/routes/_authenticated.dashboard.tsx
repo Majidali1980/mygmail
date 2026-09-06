@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { extractPoster, generateEmail } from "@/lib/ai.functions";
+import { extractPoster, generateEmail, draftFromSubject } from "@/lib/ai.functions";
 import { generatePosterImage } from "@/lib/poster.functions";
 import { sendGmail, sendGmailBulk } from "@/lib/gmail.functions";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X, Eye } from "lucide-react";
+import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X, Eye, Paperclip } from "lucide-react";
 import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
 
 type PosterTpl = { id: string; name: string; prompt_template: string; source_path: string | null };
@@ -38,10 +38,12 @@ function Dashboard() {
   const { session, user, loading } = useAuth();
   const extractFn = useServerFn(extractPoster);
   const generateFn = useServerFn(generateEmail);
+  const draftFn = useServerFn(draftFromSubject);
   const sendFn = useServerFn(sendGmail);
   const sendBulkFn = useServerFn(sendGmailBulk);
   const genPosterFn = useServerFn(generatePosterImage);
   const fileRef = useRef<HTMLInputElement>(null);
+  const attachRef = useRef<HTMLInputElement>(null);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [posterPath, setPosterPath] = useState<string | null>(null);
@@ -55,7 +57,7 @@ function Dashboard() {
   const [templates, setTemplates] = useState<PosterTpl[]>([]);
   const [pickedTemplate, setPickedTemplate] = useState<string>("");
   const [posterFormat, setPosterFormat] = useState<PosterFormat>("poster");
-  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string; templateName?: string; format?: PosterFormat }[]>([]);
+  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string; mimeType: string; templateName?: string; format?: PosterFormat }[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState("");
@@ -179,6 +181,53 @@ function Dashboard() {
     }
   }
 
+  // Option 1: draft the body from just the subject line.
+  async function handleDraftFromSubject() {
+    if (!user || !subject.trim()) {
+      toast.error("Write a subject first — AI will draft the body from it");
+      return;
+    }
+    setStep("generating");
+    try {
+      const { data: profile } = await supabase
+        .from("profiles").select("agency_name,agency_phone,agency_email").eq("user_id", user.id).maybeSingle();
+      const gen = await draftFn({
+        data: {
+          subject: subject.trim(),
+          agencyName: profile?.agency_name ?? undefined,
+          agencyPhone: profile?.agency_phone ?? undefined,
+          agencyEmail: profile?.agency_email ?? user.email ?? undefined,
+        },
+      });
+      setSubject(gen.subject);
+      setBody(gen.body);
+      toast.success("Body drafted from your subject");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setStep("idle");
+    }
+  }
+
+  // Manual attachments (your own images / work samples).
+  async function handleAttachFiles(list: FileList) {
+    for (const f of Array.from(list)) {
+      if (attachments.length >= 5) { toast.error("Max 5 attachments"); break; }
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = () => reject(new Error("Read failed"));
+        r.readAsDataURL(f);
+      });
+      const base64 = dataUrl.split(",")[1] ?? "";
+      setAttachments((a) => [...a, {
+        id: crypto.randomUUID(), name: f.name, dataBase64: base64,
+        previewUrl: dataUrl, mimeType: f.type || "image/png",
+      }]);
+    }
+    toast.success("Attached");
+  }
+
   async function handleGeneratePoster() {
     if (!user || !extraction || !pickedTemplate) return;
     const tpl = templates.find((t) => t.id === pickedTemplate);
@@ -217,7 +266,7 @@ function Dashboard() {
       const suffix = posterFormat === "facebook_cover" ? "fb-cover" : "poster";
       setAttachments((a) => [...a, {
         id, name: `${suffix}-${a.length + 1}.png`, dataBase64: base64,
-        previewUrl: res.dataUrl, templateName: tpl.name, format: posterFormat,
+        previewUrl: res.dataUrl, mimeType: "image/png", templateName: tpl.name, format: posterFormat,
       }]);
       toast.success(`${posterFormat === "facebook_cover" ? "Facebook cover" : "Poster"} ready & attached`);
     } catch (e) {
@@ -238,7 +287,7 @@ function Dashboard() {
       const res = await sendFn({
         data: {
           to: recipient, subject, body,
-          attachments: attachments.map((a) => ({ filename: a.name, mimeType: "image/png", dataBase64: a.dataBase64 })),
+          attachments: attachments.map((a) => ({ filename: a.name, mimeType: a.mimeType, dataBase64: a.dataBase64 })),
         },
       });
       await supabase.from("email_sends").insert({
@@ -265,7 +314,7 @@ function Dashboard() {
     if (!user || !subject || !body || bulkRecipients.length === 0) return;
     setStep("sending");
     setProgress({ done: 0, total: bulkRecipients.length });
-    const files = attachments.map((a) => ({ filename: a.name, mimeType: "image/png", dataBase64: a.dataBase64 }));
+    const files = attachments.map((a) => ({ filename: a.name, mimeType: a.mimeType, dataBase64: a.dataBase64 }));
     let sent = 0;
     let failed = 0;
     try {
@@ -307,15 +356,19 @@ function Dashboard() {
     <div className="mx-auto max-w-6xl p-6 md:p-10">
       <div className="mb-8">
         <h1 className="font-display text-3xl font-bold">Generate outreach</h1>
-        <p className="text-muted-foreground">Upload a business poster — get a personalized email in seconds.</p>
+        <p className="text-muted-foreground">
+          Two ways to draft: <span className="font-medium text-foreground">1)</span> write a subject and let AI draft the body, or{" "}
+          <span className="font-medium text-foreground">2)</span> upload a business poster for a fully personalized email.
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upload + extraction */}
         <div className="glass rounded-2xl p-6">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
-            <Upload className="h-4 w-4 text-primary" /> Poster
+          <div className="mb-1 flex items-center gap-2 text-sm font-medium">
+            <Upload className="h-4 w-4 text-primary" /> Poster <span className="text-xs font-normal text-muted-foreground">(option 2 — optional)</span>
           </div>
+          <p className="mb-3 text-xs text-muted-foreground">AI reads the poster, finds the business details and drafts a personalized email.</p>
           {previewUrl ? (
             <img src={previewUrl} alt="poster" className="mb-4 max-h-72 w-full rounded-lg object-contain bg-background/40" />
           ) : (
@@ -414,12 +467,64 @@ function Dashboard() {
               )}
             </div>
             <div>
-              <Label htmlFor="subj">Subject</Label>
-              <Input id="subj" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="AI subject will appear here" />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="subj">Subject</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs"
+                  onClick={handleDraftFromSubject}
+                  disabled={busy || !subject.trim()}
+                  title="AI writes the body based on your subject (option 1)"
+                >
+                  {step === "generating" && !extraction ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                  AI draft from subject
+                </Button>
+              </div>
+              <Input id="subj" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder='e.g. "Grow your restaurant with social media"' />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Option 1: type a subject, then click <span className="font-medium text-foreground">AI draft from subject</span>.
+              </p>
             </div>
             <div>
               <Label htmlFor="body">Body</Label>
-              <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} rows={14} placeholder="Upload a poster to generate the email…" />
+              <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} rows={14} placeholder="Draft from your subject with AI, or upload a poster…" />
+            </div>
+
+            {/* Manual attachments */}
+            <div>
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1"><Paperclip className="h-3 w-3" /> Attachments</Label>
+                <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => attachRef.current?.click()} disabled={busy}>
+                  <Paperclip className="h-3 w-3 mr-1" /> Attach images
+                </Button>
+              </div>
+              <input
+                ref={attachRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => { if (e.target.files?.length) void handleAttachFiles(e.target.files); e.target.value = ""; }}
+              />
+              {attachments.length > 0 && (
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {attachments.map((a) => (
+                    <div key={a.id} className="relative">
+                      <img src={a.previewUrl} alt={a.name} className="aspect-square w-full rounded-md border border-border object-cover" />
+                      <div className="mt-1 truncate text-[10px] text-muted-foreground">{a.name}</div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(a.id)}
+                        className="absolute -top-1 -right-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
