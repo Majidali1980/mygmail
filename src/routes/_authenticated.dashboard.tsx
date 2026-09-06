@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { extractPoster, generateEmail } from "@/lib/ai.functions";
 import { generatePosterImage } from "@/lib/poster.functions";
-import { sendGmail } from "@/lib/gmail.functions";
+import { sendGmail, sendGmailBulk } from "@/lib/gmail.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,7 @@ function Dashboard() {
   const extractFn = useServerFn(extractPoster);
   const generateFn = useServerFn(generateEmail);
   const sendFn = useServerFn(sendGmail);
+  const sendBulkFn = useServerFn(sendGmailBulk);
   const genPosterFn = useServerFn(generatePosterImage);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -56,6 +57,18 @@ function Dashboard() {
   const [posterFormat, setPosterFormat] = useState<PosterFormat>("poster");
   const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string; templateName?: string; format?: PosterFormat }[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+
+  const bulkRecipients = Array.from(
+    new Set(
+      bulkText
+        .split(/[\s,;]+/)
+        .map((s) => s.trim().toLowerCase())
+        .filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)),
+    ),
+  ).slice(0, 100);
 
   useEffect(() => {
     if (!loading && !session) window.location.href = "/login";
@@ -248,6 +261,46 @@ function Dashboard() {
     }
   }
 
+  async function handleBulkSend() {
+    if (!user || !subject || !body || bulkRecipients.length === 0) return;
+    setStep("sending");
+    setProgress({ done: 0, total: bulkRecipients.length });
+    const files = attachments.map((a) => ({ filename: a.name, mimeType: "image/png", dataBase64: a.dataBase64 }));
+    let sent = 0;
+    let failed = 0;
+    try {
+      for (let i = 0; i < bulkRecipients.length; i += 10) {
+        const chunk = bulkRecipients.slice(i, i + 10);
+        const { results } = await sendBulkFn({
+          data: { recipients: chunk, subject, body, attachments: files, delayMs: 900 },
+        });
+        const rows = results.map((r) => ({
+          user_id: user.id,
+          lead_id: leadId,
+          recipient: r.to,
+          subject,
+          body,
+          gmail_message_id: r.ok ? r.id : null,
+          status: r.ok ? "sent" : "failed",
+          error: r.ok ? null : (r.error ?? "unknown error"),
+        }));
+        await supabase.from("email_sends").insert(rows);
+        sent += results.filter((r) => r.ok).length;
+        failed += results.filter((r) => !r.ok).length;
+        setProgress({ done: Math.min(i + chunk.length, bulkRecipients.length), total: bulkRecipients.length });
+        // pause between batches to stay gentle with Gmail limits
+        if (i + 10 < bulkRecipients.length) await new Promise((r) => setTimeout(r, 3000));
+      }
+      if (failed === 0) toast.success(`Sent ${sent} individual emails — no recipient can see the others`);
+      else toast.warning(`Sent ${sent}, failed ${failed}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setProgress(null);
+      setStep("idle");
+    }
+  }
+
   const busy = step !== "idle";
 
   return (
@@ -330,8 +383,35 @@ function Dashboard() {
 
           <div className="space-y-3">
             <div>
-              <Label htmlFor="to">To</Label>
-              <Input id="to" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="recipient@example.com" />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="to">{bulkMode ? "Recipients (bulk)" : "To"}</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setBulkMode((b) => !b)}
+                >
+                  {bulkMode ? "Single recipient" : "Bulk send (up to 100)"}
+                </Button>
+              </div>
+              {bulkMode ? (
+                <>
+                  <Textarea
+                    id="to"
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    rows={4}
+                    placeholder="Paste emails separated by comma, space or new line…"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {bulkRecipients.length} valid recipient{bulkRecipients.length === 1 ? "" : "s"} · each gets a separate
+                    private email — no one sees the rest of the list.
+                  </p>
+                </>
+              ) : (
+                <Input id="to" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="recipient@example.com" />
+              )}
             </div>
             <div>
               <Label htmlFor="subj">Subject</Label>
@@ -401,26 +481,36 @@ function Dashboard() {
           )}
           <Button
             onClick={() => setPreviewOpen(true)}
-            disabled={busy || !recipient || !subject || !body}
+            disabled={busy || (bulkMode ? bulkRecipients.length === 0 : !recipient) || !subject || !body}
             className="mt-4 w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
           >
             <Eye className="mr-2 h-4 w-4" />
-            Preview &amp; send
+            {bulkMode ? `Preview & send to ${bulkRecipients.length}` : "Preview & send"}
           </Button>
-          <p className="mt-2 text-center text-xs text-muted-foreground">Review the email and attachments before it leaves your Gmail</p>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            {progress
+              ? `Sending ${progress.done} of ${progress.total}…`
+              : "Review the email and attachments before it leaves your Gmail"}
+          </p>
         </div>
       </div>
 
       <EmailPreviewDialog
         open={previewOpen}
         onOpenChange={setPreviewOpen}
-        to={recipient}
+        to={bulkMode ? `${bulkRecipients.length} recipients (each sent privately)` : recipient}
         subject={subject}
         body={body}
         attachments={attachments.map((a) => ({ id: a.id, name: a.name, previewUrl: a.previewUrl }))}
         busy={step === "sending"}
-        onConfirm={async () => { await handleSend(); setPreviewOpen(false); }}
+        confirmLabel={bulkMode ? `Send ${bulkRecipients.length} private emails` : "Send via Gmail"}
+        onConfirm={async () => {
+          if (bulkMode) await handleBulkSend();
+          else await handleSend();
+          setPreviewOpen(false);
+        }}
       />
+
     </div>
   );
 }

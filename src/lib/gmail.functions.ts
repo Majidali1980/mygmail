@@ -28,6 +28,49 @@ export const sendGmail = createServerFn({ method: "POST" })
     return sendGmailRaw(data);
   });
 
+// Bulk send: one separate email per recipient so nobody sees the other
+// recipients (safer than CC/BCC for deliverability). Capped per call; the
+// client sends the list in small chunks with pauses to avoid spam filters.
+export const sendGmailBulk = createServerFn({ method: "POST" })
+  .inputValidator((d: {
+    recipients: string[];
+    subject: string;
+    body: string;
+    attachments?: { filename: string; mimeType: string; dataBase64: string }[];
+    delayMs?: number;
+  }) =>
+    z.object({
+      recipients: z.array(z.string().email()).min(1).max(20),
+      subject: z.string().min(1).max(300),
+      body: z.string().min(1).max(50000),
+      attachments: z.array(attachmentSchema).max(5).optional(),
+      delayMs: z.number().int().min(0).max(5000).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const delay = data.delayMs ?? 800;
+    const results: { to: string; ok: boolean; id?: string; error?: string }[] = [];
+    const seen = new Set<string>();
+    for (const raw of data.recipients) {
+      const to = raw.trim().toLowerCase();
+      if (seen.has(to)) continue;
+      seen.add(to);
+      try {
+        const r = await sendGmailRaw({
+          to,
+          subject: data.subject,
+          body: data.body,
+          attachments: data.attachments,
+        });
+        results.push({ to, ok: true, id: r.id });
+      } catch (e) {
+        results.push({ to, ok: false, error: (e as Error).message });
+      }
+      if (delay) await new Promise((res) => setTimeout(res, delay));
+    }
+    return { results };
+  });
+
 export const listInbox = createServerFn({ method: "GET" })
   .inputValidator((d: { max?: number }) =>
     z.object({ max: z.number().int().min(1).max(50).optional() }).parse(d ?? {}),
