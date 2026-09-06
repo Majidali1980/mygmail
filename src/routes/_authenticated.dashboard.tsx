@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { extractPoster, generateEmail } from "@/lib/ai.functions";
 import { generatePosterImage } from "@/lib/poster.functions";
-import { sendGmail } from "@/lib/gmail.functions";
+import { sendGmail, sendGmailBulk } from "@/lib/gmail.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
