@@ -365,9 +365,10 @@ function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upload + extraction */}
         <div className="glass rounded-2xl p-6">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium">
-            <Upload className="h-4 w-4 text-primary" /> Poster
+          <div className="mb-1 flex items-center gap-2 text-sm font-medium">
+            <Upload className="h-4 w-4 text-primary" /> Poster <span className="text-xs font-normal text-muted-foreground">(option 2 — optional)</span>
           </div>
+          <p className="mb-3 text-xs text-muted-foreground">AI reads the poster, finds the business details and drafts a personalized email.</p>
           {previewUrl ? (
             <img src={previewUrl} alt="poster" className="mb-4 max-h-72 w-full rounded-lg object-contain bg-background/40" />
           ) : (
@@ -466,12 +467,64 @@ function Dashboard() {
               )}
             </div>
             <div>
-              <Label htmlFor="subj">Subject</Label>
-              <Input id="subj" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="AI subject will appear here" />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="subj">Subject</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs"
+                  onClick={handleDraftFromSubject}
+                  disabled={busy || !subject.trim()}
+                  title="AI writes the body based on your subject (option 1)"
+                >
+                  {step === "generating" && !extraction ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                  AI draft from subject
+                </Button>
+              </div>
+              <Input id="subj" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder='e.g. "Grow your restaurant with social media"' />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Option 1: type a subject, then click <span className="font-medium text-foreground">AI draft from subject</span>.
+              </p>
             </div>
             <div>
               <Label htmlFor="body">Body</Label>
-              <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} rows={14} placeholder="Upload a poster to generate the email…" />
+              <Textarea id="body" value={body} onChange={(e) => setBody(e.target.value)} rows={14} placeholder="Draft from your subject with AI, or upload a poster…" />
+            </div>
+
+            {/* Manual attachments */}
+            <div>
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1"><Paperclip className="h-3 w-3" /> Attachments</Label>
+                <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => attachRef.current?.click()} disabled={busy}>
+                  <Paperclip className="h-3 w-3 mr-1" /> Attach images
+                </Button>
+              </div>
+              <input
+                ref={attachRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => { if (e.target.files?.length) void handleAttachFiles(e.target.files); e.target.value = ""; }}
+              />
+              {attachments.length > 0 && (
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {attachments.map((a) => (
+                    <div key={a.id} className="relative">
+                      <img src={a.previewUrl} alt={a.name} className="aspect-square w-full rounded-md border border-border object-cover" />
+                      <div className="mt-1 truncate text-[10px] text-muted-foreground">{a.name}</div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(a.id)}
+                        className="absolute -top-1 -right-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
