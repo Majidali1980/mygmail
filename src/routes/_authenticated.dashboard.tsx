@@ -481,26 +481,36 @@ function Dashboard() {
           )}
           <Button
             onClick={() => setPreviewOpen(true)}
-            disabled={busy || !recipient || !subject || !body}
+            disabled={busy || (bulkMode ? bulkRecipients.length === 0 : !recipient) || !subject || !body}
             className="mt-4 w-full bg-gradient-primary text-primary-foreground hover:opacity-90"
           >
             <Eye className="mr-2 h-4 w-4" />
-            Preview &amp; send
+            {bulkMode ? `Preview & send to ${bulkRecipients.length}` : "Preview & send"}
           </Button>
-          <p className="mt-2 text-center text-xs text-muted-foreground">Review the email and attachments before it leaves your Gmail</p>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            {progress
+              ? `Sending ${progress.done} of ${progress.total}…`
+              : "Review the email and attachments before it leaves your Gmail"}
+          </p>
         </div>
       </div>
 
       <EmailPreviewDialog
         open={previewOpen}
         onOpenChange={setPreviewOpen}
-        to={recipient}
+        to={bulkMode ? `${bulkRecipients.length} recipients (each sent privately)` : recipient}
         subject={subject}
         body={body}
         attachments={attachments.map((a) => ({ id: a.id, name: a.name, previewUrl: a.previewUrl }))}
         busy={step === "sending"}
-        onConfirm={async () => { await handleSend(); setPreviewOpen(false); }}
+        confirmLabel={bulkMode ? `Send ${bulkRecipients.length} private emails` : "Send via Gmail"}
+        onConfirm={async () => {
+          if (bulkMode) await handleBulkSend();
+          else await handleSend();
+          setPreviewOpen(false);
+        }}
       />
+
     </div>
   );
 }
