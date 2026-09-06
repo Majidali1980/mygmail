@@ -38,10 +38,12 @@ function Dashboard() {
   const { session, user, loading } = useAuth();
   const extractFn = useServerFn(extractPoster);
   const generateFn = useServerFn(generateEmail);
+  const draftFn = useServerFn(draftFromSubject);
   const sendFn = useServerFn(sendGmail);
   const sendBulkFn = useServerFn(sendGmailBulk);
   const genPosterFn = useServerFn(generatePosterImage);
   const fileRef = useRef<HTMLInputElement>(null);
+  const attachRef = useRef<HTMLInputElement>(null);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [posterPath, setPosterPath] = useState<string | null>(null);
@@ -55,7 +57,7 @@ function Dashboard() {
   const [templates, setTemplates] = useState<PosterTpl[]>([]);
   const [pickedTemplate, setPickedTemplate] = useState<string>("");
   const [posterFormat, setPosterFormat] = useState<PosterFormat>("poster");
-  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string; templateName?: string; format?: PosterFormat }[]>([]);
+  const [attachments, setAttachments] = useState<{ id: string; name: string; dataBase64: string; previewUrl: string; mimeType: string; templateName?: string; format?: PosterFormat }[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState("");
