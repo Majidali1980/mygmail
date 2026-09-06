@@ -261,6 +261,46 @@ function Dashboard() {
     }
   }
 
+  async function handleBulkSend() {
+    if (!user || !subject || !body || bulkRecipients.length === 0) return;
+    setStep("sending");
+    setProgress({ done: 0, total: bulkRecipients.length });
+    const files = attachments.map((a) => ({ filename: a.name, mimeType: "image/png", dataBase64: a.dataBase64 }));
+    let sent = 0;
+    let failed = 0;
+    try {
+      for (let i = 0; i < bulkRecipients.length; i += 10) {
+        const chunk = bulkRecipients.slice(i, i + 10);
+        const { results } = await sendBulkFn({
+          data: { recipients: chunk, subject, body, attachments: files, delayMs: 900 },
+        });
+        const rows = results.map((r) => ({
+          user_id: user.id,
+          lead_id: leadId,
+          recipient: r.to,
+          subject,
+          body,
+          gmail_message_id: r.ok ? r.id : null,
+          status: r.ok ? "sent" : "failed",
+          error: r.ok ? null : (r.error ?? "unknown error"),
+        }));
+        await supabase.from("email_sends").insert(rows);
+        sent += results.filter((r) => r.ok).length;
+        failed += results.filter((r) => !r.ok).length;
+        setProgress({ done: Math.min(i + chunk.length, bulkRecipients.length), total: bulkRecipients.length });
+        // pause between batches to stay gentle with Gmail limits
+        if (i + 10 < bulkRecipients.length) await new Promise((r) => setTimeout(r, 3000));
+      }
+      if (failed === 0) toast.success(`Sent ${sent} individual emails — no recipient can see the others`);
+      else toast.warning(`Sent ${sent}, failed ${failed}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setProgress(null);
+      setStep("idle");
+    }
+  }
+
   const busy = step !== "idle";
 
   return (
