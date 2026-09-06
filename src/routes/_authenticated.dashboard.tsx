@@ -287,7 +287,7 @@ function Dashboard() {
       const res = await sendFn({
         data: {
           to: recipient, subject, body,
-          attachments: attachments.map((a) => ({ filename: a.name, mimeType: "image/png", dataBase64: a.dataBase64 })),
+          attachments: attachments.map((a) => ({ filename: a.name, mimeType: a.mimeType, dataBase64: a.dataBase64 })),
         },
       });
       await supabase.from("email_sends").insert({
@@ -314,7 +314,7 @@ function Dashboard() {
     if (!user || !subject || !body || bulkRecipients.length === 0) return;
     setStep("sending");
     setProgress({ done: 0, total: bulkRecipients.length });
-    const files = attachments.map((a) => ({ filename: a.name, mimeType: "image/png", dataBase64: a.dataBase64 }));
+    const files = attachments.map((a) => ({ filename: a.name, mimeType: a.mimeType, dataBase64: a.dataBase64 }));
     let sent = 0;
     let failed = 0;
     try {
@@ -356,7 +356,10 @@ function Dashboard() {
     <div className="mx-auto max-w-6xl p-6 md:p-10">
       <div className="mb-8">
         <h1 className="font-display text-3xl font-bold">Generate outreach</h1>
-        <p className="text-muted-foreground">Upload a business poster — get a personalized email in seconds.</p>
+        <p className="text-muted-foreground">
+          Two ways to draft: <span className="font-medium text-foreground">1)</span> write a subject and let AI draft the body, or{" "}
+          <span className="font-medium text-foreground">2)</span> upload a business poster for a fully personalized email.
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
