@@ -181,6 +181,53 @@ function Dashboard() {
     }
   }
 
+  // Option 1: draft the body from just the subject line.
+  async function handleDraftFromSubject() {
+    if (!user || !subject.trim()) {
+      toast.error("Write a subject first — AI will draft the body from it");
+      return;
+    }
+    setStep("generating");
+    try {
+      const { data: profile } = await supabase
+        .from("profiles").select("agency_name,agency_phone,agency_email").eq("user_id", user.id).maybeSingle();
+      const gen = await draftFn({
+        data: {
+          subject: subject.trim(),
+          agencyName: profile?.agency_name ?? undefined,
+          agencyPhone: profile?.agency_phone ?? undefined,
+          agencyEmail: profile?.agency_email ?? user.email ?? undefined,
+        },
+      });
+      setSubject(gen.subject);
+      setBody(gen.body);
+      toast.success("Body drafted from your subject");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setStep("idle");
+    }
+  }
+
+  // Manual attachments (your own images / work samples).
+  async function handleAttachFiles(list: FileList) {
+    for (const f of Array.from(list)) {
+      if (attachments.length >= 5) { toast.error("Max 5 attachments"); break; }
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = () => reject(new Error("Read failed"));
+        r.readAsDataURL(f);
+      });
+      const base64 = dataUrl.split(",")[1] ?? "";
+      setAttachments((a) => [...a, {
+        id: crypto.randomUUID(), name: f.name, dataBase64: base64,
+        previewUrl: dataUrl, mimeType: f.type || "image/png",
+      }]);
+    }
+    toast.success("Attached");
+  }
+
   async function handleGeneratePoster() {
     if (!user || !extraction || !pickedTemplate) return;
     const tpl = templates.find((t) => t.id === pickedTemplate);
@@ -219,7 +266,7 @@ function Dashboard() {
       const suffix = posterFormat === "facebook_cover" ? "fb-cover" : "poster";
       setAttachments((a) => [...a, {
         id, name: `${suffix}-${a.length + 1}.png`, dataBase64: base64,
-        previewUrl: res.dataUrl, templateName: tpl.name, format: posterFormat,
+        previewUrl: res.dataUrl, mimeType: "image/png", templateName: tpl.name, format: posterFormat,
       }]);
       toast.success(`${posterFormat === "facebook_cover" ? "Facebook cover" : "Poster"} ready & attached`);
     } catch (e) {
