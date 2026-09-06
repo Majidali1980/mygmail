@@ -39,6 +39,7 @@ function Dashboard() {
   const extractFn = useServerFn(extractPoster);
   const generateFn = useServerFn(generateEmail);
   const sendFn = useServerFn(sendGmail);
+  const sendBulkFn = useServerFn(sendGmailBulk);
   const genPosterFn = useServerFn(generatePosterImage);
   const fileRef = useRef<HTMLInputElement>(null);
 
