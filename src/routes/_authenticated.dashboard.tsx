@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { extractPoster, generateEmail } from "@/lib/ai.functions";
+import { extractPoster, generateEmail, draftFromSubject } from "@/lib/ai.functions";
 import { generatePosterImage } from "@/lib/poster.functions";
 import { sendGmail, sendGmailBulk } from "@/lib/gmail.functions";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X, Eye } from "lucide-react";
+import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X, Eye, Paperclip } from "lucide-react";
 import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
 
 type PosterTpl = { id: string; name: string; prompt_template: string; source_path: string | null };
