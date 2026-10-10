@@ -122,7 +122,7 @@ function ProspectingPage() {
   }
 
   const person = people.find((p) => p.id === activePerson) ?? null;
-  async function updatePerson(id: string, patch: Partial<Person>) {
+  async function updatePerson(id: string, patch: Partial<Tables<"people">>) {
     setPeople((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
     await supabase.from("people").update(patch).eq("id", id);
   }
