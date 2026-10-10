@@ -9,55 +9,35 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
-import { Route as AuthenticatedSentRouteImport } from './routes/_authenticated.sent'
-import { Route as AuthenticatedPostersRouteImport } from './routes/_authenticated.posters'
-import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated.leads'
-import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated.inbox'
-import { Route as AuthenticatedFollowupsRouteImport } from './routes/_authenticated.followups'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedFollowupsRouteImport } from './routes/_authenticated.followups'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated.inbox'
+import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated.leads'
+import { Route as AuthenticatedPostersRouteImport } from './routes/_authenticated.posters'
+import { Route as AuthenticatedSentRouteImport } from './routes/_authenticated.sent'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as ApiPublicHooksRunFollowupsRouteImport } from './routes/api/public/hooks/run-followups'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedSentRoute = AuthenticatedSentRouteImport.update({
-  id: '/sent',
-  path: '/sent',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedPostersRoute = AuthenticatedPostersRouteImport.update({
-  id: '/posters',
-  path: '/posters',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
-  id: '/leads',
-  path: '/leads',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedFollowupsRoute = AuthenticatedFollowupsRouteImport.update({
@@ -65,9 +45,29 @@ const AuthenticatedFollowupsRoute = AuthenticatedFollowupsRouteImport.update({
   path: '/followups',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPostersRoute = AuthenticatedPostersRouteImport.update({
+  id: '/posters',
+  path: '/posters',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSentRoute = AuthenticatedSentRouteImport.update({
+  id: '/sent',
+  path: '/sent',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const ApiPublicHooksRunFollowupsRoute =
@@ -164,11 +164,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -178,46 +178,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sent': {
-      id: '/_authenticated/sent'
-      path: '/sent'
-      fullPath: '/sent'
-      preLoaderRoute: typeof AuthenticatedSentRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/posters': {
-      id: '/_authenticated/posters'
-      path: '/posters'
-      fullPath: '/posters'
-      preLoaderRoute: typeof AuthenticatedPostersRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/leads': {
-      id: '/_authenticated/leads'
-      path: '/leads'
-      fullPath: '/leads'
-      preLoaderRoute: typeof AuthenticatedLeadsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/inbox': {
-      id: '/_authenticated/inbox'
-      path: '/inbox'
-      fullPath: '/inbox'
-      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/followups': {
@@ -227,11 +199,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFollowupsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/leads': {
+      id: '/_authenticated/leads'
+      path: '/leads'
+      fullPath: '/leads'
+      preLoaderRoute: typeof AuthenticatedLeadsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/posters': {
+      id: '/_authenticated/posters'
+      path: '/posters'
+      fullPath: '/posters'
+      preLoaderRoute: typeof AuthenticatedPostersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sent': {
+      id: '/_authenticated/sent'
+      path: '/sent'
+      fullPath: '/sent'
+      preLoaderRoute: typeof AuthenticatedSentRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/api/public/hooks/run-followups': {
