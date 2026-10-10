@@ -12,10 +12,11 @@ async function aiJson(system: string, user: string): Promise<any> {
     method: "POST",
     headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "raw" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "openai/gpt-6-astra",
+      reasoning_effort: "low",
       messages: [
-        { role: "system", content: system + " Respond with valid JSON only." },
-        { role: "user", content: user },
+        { role: "system", content: system + " Respond with valid json only." },
+        { role: "user", content: user + "\n\nReturn json only." },
       ],
       response_format: { type: "json_object" },
     }),
