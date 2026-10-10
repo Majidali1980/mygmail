@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaigns: {
+        Row: {
+          created_at: string
+          description: string | null
+          est_count: number | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          est_count?: number | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          est_count?: number | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          campaign_id: string
+          country: string | null
+          created_at: string
+          description: string | null
+          domain: string | null
+          id: string
+          name: string
+          size: string | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          campaign_id: string
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          domain?: string | null
+          id?: string
+          name: string
+          size?: string | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          domain?: string | null
+          id?: string
+          name?: string
+          size?: string | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_sends: {
         Row: {
           body: string
@@ -245,6 +319,81 @@ export type Database = {
         }
         Relationships: []
       }
+      people: {
+        Row: {
+          body: string | null
+          campaign_id: string
+          company_id: string
+          created_at: string
+          email: string | null
+          email_source: string | null
+          email_status: string
+          error: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          outreach_status: string
+          sent_at: string | null
+          subject: string | null
+          title: string | null
+          unsubscribe_token: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          campaign_id: string
+          company_id: string
+          created_at?: string
+          email?: string | null
+          email_source?: string | null
+          email_status?: string
+          error?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          outreach_status?: string
+          sent_at?: string | null
+          subject?: string | null
+          title?: string | null
+          unsubscribe_token?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          campaign_id?: string
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          email_source?: string | null
+          email_status?: string
+          error?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          outreach_status?: string
+          sent_at?: string | null
+          subject?: string | null
+          title?: string | null
+          unsubscribe_token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       poster_templates: {
         Row: {
           created_at: string
@@ -281,32 +430,74 @@ export type Database = {
           agency_name: string | null
           agency_phone: string | null
           avatar_url: string | null
+          business_summary: string | null
           created_at: string
+          daily_limit: number
           display_name: string | null
           id: string
+          offer: string | null
+          sender_address: string | null
+          sender_business_name: string | null
           updated_at: string
           user_id: string
+          website: string | null
         }
         Insert: {
           agency_email?: string | null
           agency_name?: string | null
           agency_phone?: string | null
           avatar_url?: string | null
+          business_summary?: string | null
           created_at?: string
+          daily_limit?: number
           display_name?: string | null
           id?: string
+          offer?: string | null
+          sender_address?: string | null
+          sender_business_name?: string | null
           updated_at?: string
           user_id: string
+          website?: string | null
         }
         Update: {
           agency_email?: string | null
           agency_name?: string | null
           agency_phone?: string | null
           avatar_url?: string | null
+          business_summary?: string | null
           created_at?: string
+          daily_limit?: number
           display_name?: string | null
           id?: string
+          offer?: string | null
+          sender_address?: string | null
+          sender_business_name?: string | null
           updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      suppression_list: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          reason?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          reason?: string
           user_id?: string
         }
         Relationships: []
