@@ -17,6 +17,7 @@ import { Route as AuthenticatedFollowupsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated.inbox'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated.leads'
 import { Route as AuthenticatedPostersRouteImport } from './routes/_authenticated.posters'
+import { Route as AuthenticatedProspectingRouteImport } from './routes/_authenticated.prospecting'
 import { Route as AuthenticatedSentRouteImport } from './routes/_authenticated.sent'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as ApiPublicUnsubscribeRouteImport } from './routes/api/public/unsubscribe'
@@ -61,6 +62,12 @@ const AuthenticatedPostersRoute = AuthenticatedPostersRouteImport.update({
   path: '/posters',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedProspectingRoute =
+  AuthenticatedProspectingRouteImport.update({
+    id: '/prospecting',
+    path: '/prospecting',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSentRoute = AuthenticatedSentRouteImport.update({
   id: '/sent',
   path: '/sent',
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/posters': typeof AuthenticatedPostersRoute
+  '/prospecting': typeof AuthenticatedProspectingRoute
   '/sent': typeof AuthenticatedSentRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
@@ -104,6 +112,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AuthenticatedInboxRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/posters': typeof AuthenticatedPostersRoute
+  '/prospecting': typeof AuthenticatedProspectingRoute
   '/sent': typeof AuthenticatedSentRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
@@ -119,6 +128,7 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/posters': typeof AuthenticatedPostersRoute
+  '/_authenticated/prospecting': typeof AuthenticatedProspectingRoute
   '/_authenticated/sent': typeof AuthenticatedSentRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/public/unsubscribe': typeof ApiPublicUnsubscribeRoute
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/leads'
     | '/posters'
+    | '/prospecting'
     | '/sent'
     | '/settings'
     | '/api/public/unsubscribe'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/leads'
     | '/posters'
+    | '/prospecting'
     | '/sent'
     | '/settings'
     | '/api/public/unsubscribe'
@@ -161,6 +173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inbox'
     | '/_authenticated/leads'
     | '/_authenticated/posters'
+    | '/_authenticated/prospecting'
     | '/_authenticated/sent'
     | '/_authenticated/settings'
     | '/api/public/unsubscribe'
@@ -233,6 +246,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPostersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/prospecting': {
+      id: '/_authenticated/prospecting'
+      path: '/prospecting'
+      fullPath: '/prospecting'
+      preLoaderRoute: typeof AuthenticatedProspectingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sent': {
       id: '/_authenticated/sent'
       path: '/sent'
@@ -270,6 +290,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
   AuthenticatedPostersRoute: typeof AuthenticatedPostersRoute
+  AuthenticatedProspectingRoute: typeof AuthenticatedProspectingRoute
   AuthenticatedSentRoute: typeof AuthenticatedSentRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
@@ -280,6 +301,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
   AuthenticatedPostersRoute: AuthenticatedPostersRoute,
+  AuthenticatedProspectingRoute: AuthenticatedProspectingRoute,
   AuthenticatedSentRoute: AuthenticatedSentRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
