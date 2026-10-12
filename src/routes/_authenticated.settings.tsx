@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Linkedin, CheckCircle2, RefreshCw } from "lucide-react";
+import { getLinkedInStatus } from "@/lib/linkedin.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — AI Outreach Studio" }] }),
@@ -42,6 +44,8 @@ function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl p-6 md:p-10">
       <h1 className="font-display text-3xl font-bold mb-6">Settings</h1>
+      <LinkedInCard />
+
       <div className="glass rounded-2xl p-6 space-y-4">
         <div>
           <Label>Agency name</Label>
@@ -60,6 +64,59 @@ function SettingsPage() {
           {busy ? "Saving…" : "Save changes"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function LinkedInCard() {
+  const [status, setStatus] = useState<{ connected: boolean; profile?: { name?: string; email?: string } | null } | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  async function check() {
+    setChecking(true);
+    try {
+      const s = await getLinkedInStatus();
+      setStatus(s);
+      if (!s.connected) {
+        toast.info("LinkedIn isn't connected yet", {
+          description: "Ask me in the chat to connect LinkedIn — I'll open the secure sign-in for you.",
+        });
+      }
+    } catch {
+      toast.error("Couldn't check LinkedIn status");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  useEffect(() => {
+    check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="glass rounded-2xl p-6 mb-6 space-y-3">
+      <div className="flex items-center gap-2">
+        <Linkedin className="h-5 w-5 text-primary" />
+        <h2 className="font-display text-lg font-semibold">LinkedIn</h2>
+      </div>
+      {status?.connected ? (
+        <div className="flex items-center gap-2 text-sm">
+          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <span>
+            Connected{status.profile?.name ? ` as ${status.profile.name}` : ""}
+            {status.profile?.email ? ` (${status.profile.email})` : ""}
+          </span>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Connect your LinkedIn account to view your profile and share posts from the app.
+        </p>
+      )}
+      <Button variant="outline" onClick={check} disabled={checking} className="gap-2">
+        <RefreshCw className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} />
+        {status?.connected ? "Refresh status" : "Connect LinkedIn"}
+      </Button>
     </div>
   );
 }
