@@ -44,6 +44,8 @@ function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl p-6 md:p-10">
       <h1 className="font-display text-3xl font-bold mb-6">Settings</h1>
+      <LinkedInCard />
+
       <div className="glass rounded-2xl p-6 space-y-4">
         <div>
           <Label>Agency name</Label>
