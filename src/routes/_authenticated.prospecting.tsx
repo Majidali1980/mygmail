@@ -95,11 +95,17 @@ function ProspectingPage() {
 
   async function saveProfile(extra: Record<string, unknown> = {}) {
     if (!user) return;
-    const { error } = await supabase.from("profiles").update({
+    const payload = {
       website, offer, business_summary: summary, sender_business_name: bizName, sender_address: address,
       daily_limit: limit, ...extra,
-    }).eq("user_id", user.id);
-    if (error) toast.error(error.message); else toast.success("Saved");
+    };
+    const { data, error } = await supabase.from("profiles").update(payload).eq("user_id", user.id).select("user_id");
+    if (error) return toast.error(error.message);
+    if (!data?.length) {
+      const { error: insErr } = await supabase.from("profiles").insert({ user_id: user.id, ...payload } as never);
+      if (insErr) return toast.error(insErr.message);
+    }
+    toast.success("Profile saved");
   }
 
   async function addCampaign(name = "New segment", description = "", est_count: number | null = null) {
@@ -223,11 +229,19 @@ function ProspectingPage() {
                     {busy === "em" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 6. Find & verify emails
                   </Button>
                 </div>
-                <SimpleTable head={["Name", "Title", "Company", "Email", "Status"]}
-                  rows={people.map((p) => [
-                    [p.first_name, p.last_name].filter(Boolean).join(" ") || "—", p.title ?? "—", p.companies?.name ?? "—", p.email ?? "—",
-                    <Badge variant="outline" className={statusVariant[p.email_status] ?? ""}>{p.email_status}</Badge>,
-                  ])} />
+                <SimpleTable head={["Name", "Title", "Company", "Email", "Status", "Profile"]}
+                  rows={people.map((p) => {
+                    const name = [p.first_name, p.last_name].filter(Boolean).join(" ");
+                    const q = encodeURIComponent([name, p.companies?.name].filter(Boolean).join(" "));
+                    return [
+                      name || "—", p.title ?? "—", p.companies?.name ?? "—", p.email ?? "—",
+                      <Badge variant="outline" className={statusVariant[p.email_status] ?? ""}>{p.email_status}</Badge>,
+                      <div className="flex gap-2 text-xs">
+                        <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.linkedin.com/search/results/people/?keywords=${q}`}>LinkedIn</a>
+                        <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${q}`}>Google</a>
+                      </div>,
+                    ];
+                  })} />
               </TabsContent>
 
               <TabsContent value="emails" className="space-y-3">
