@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { Linkedin, CheckCircle2, RefreshCw } from "lucide-react";
+import { getLinkedInStatus } from "@/lib/linkedin.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings — AI Outreach Studio" }] }),
