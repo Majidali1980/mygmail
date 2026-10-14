@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Eye } from "lucide-react";
+import { enterDemo } from "@/lib/demo";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — AI Outreach Studio" }] }),
@@ -123,6 +124,16 @@ function LoginPage() {
             <button type="button" className="text-primary hover:underline" onClick={() => setMode(mode === "signin" ? "signup" : "signin")}>
               {mode === "signin" ? "Create one" : "Sign in"}
             </button>
+          </p>
+
+          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="h-px flex-1 bg-border" /> JUST LOOKING? <div className="h-px flex-1 bg-border" />
+          </div>
+          <Button type="button" variant="secondary" className="w-full" onClick={() => enterDemo()}>
+            <Eye className="mr-2 h-4 w-4" /> View demo account
+          </Button>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Read-only demo with sample data. Contact us to use the real app.
           </p>
         </div>
       </div>

@@ -1,15 +1,16 @@
 import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { LayoutDashboard, Users, Inbox, Settings, Sparkles, LogOut, Send, Clock, Image as ImageIcon, Target } from "lucide-react";
+import { LayoutDashboard, Users, Inbox, Settings, Sparkles, LogOut, Send, Clock, Image as ImageIcon, Target, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DEMO_CONTACT_EMAIL } from "@/lib/demo";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
 });
 
 function AuthLayout() {
-  const { session, loading, signOut, user } = useAuth();
+  const { session, loading, signOut, user, isDemo } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -65,13 +66,27 @@ function AuthLayout() {
           })}
         </nav>
         <div className="mt-auto border-t border-sidebar-border pt-4">
-          <div className="px-2 pb-3 text-xs text-muted-foreground truncate">{user?.email}</div>
-          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => signOut().then(() => navigate({ to: "/" }))}>
-            <LogOut className="mr-2 h-4 w-4" /> Sign out
+          <div className="px-2 pb-3 text-xs text-muted-foreground truncate">
+            {isDemo ? "Demo account (view only)" : user?.email}
+          </div>
+          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => signOut().then(() => { if (!isDemo) navigate({ to: "/" }); })}>
+            <LogOut className="mr-2 h-4 w-4" /> {isDemo ? "Exit demo" : "Sign out"}
           </Button>
         </div>
       </aside>
       <main className="flex-1 overflow-x-hidden">
+        {isDemo && (
+          <div className="flex items-center justify-center gap-2 border-b border-border bg-secondary/60 px-4 py-2 text-xs text-secondary-foreground">
+            <Eye className="h-3.5 w-3.5" />
+            <span>
+              <span className="font-semibold">Demo account — view only.</span> Changes are disabled.{" "}
+              <a href={`mailto:${DEMO_CONTACT_EMAIL}?subject=AI%20Outreach%20Studio%20access`} className="text-primary underline">
+                Contact us
+              </a>{" "}
+              to use the real app.
+            </span>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Upload, Sparkles, Send, Loader2, Image as ImageIcon, Wand2, X, Eye, Paperclip } from "lucide-react";
 import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
+import { demoBlocked } from "@/lib/demo";
 
 type PosterTpl = { id: string; name: string; prompt_template: string; source_path: string | null };
 type PosterFormat = "poster" | "facebook_cover";
@@ -35,7 +36,7 @@ type Extraction = {
 };
 
 function Dashboard() {
-  const { session, user, loading } = useAuth();
+  const { session, user, loading, isDemo } = useAuth();
   const extractFn = useServerFn(extractPoster);
   const generateFn = useServerFn(generateEmail);
   const draftFn = useServerFn(draftFromSubject);
@@ -90,7 +91,7 @@ function Dashboard() {
   if (loading || !session) return <div className="p-10 text-muted-foreground">Loading…</div>;
 
   async function handleFile(f: File) {
-    if (!user) return;
+    if (!user || demoBlocked(isDemo)) return;
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = reader.result as string;
@@ -159,7 +160,7 @@ function Dashboard() {
   }
 
   async function handleRegenerate() {
-    if (!extraction || !user) return;
+    if (!extraction || !user || demoBlocked(isDemo)) return;
     setStep("generating");
     try {
       const { data: profile } = await supabase
@@ -187,6 +188,7 @@ function Dashboard() {
       toast.error("Write a subject first — AI will draft the body from it");
       return;
     }
+    if (demoBlocked(isDemo)) return;
     setStep("generating");
     try {
       const { data: profile } = await supabase
