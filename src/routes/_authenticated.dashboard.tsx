@@ -160,7 +160,7 @@ function Dashboard() {
   }
 
   async function handleRegenerate() {
-    if (!extraction || !user) return;
+    if (!extraction || !user || demoBlocked(isDemo)) return;
     setStep("generating");
     try {
       const { data: profile } = await supabase
@@ -188,6 +188,7 @@ function Dashboard() {
       toast.error("Write a subject first — AI will draft the body from it");
       return;
     }
+    if (demoBlocked(isDemo)) return;
     setStep("generating");
     try {
       const { data: profile } = await supabase
