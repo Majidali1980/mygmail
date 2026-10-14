@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthLayout() {
-  const { session, loading, signOut, user } = useAuth();
+  const { session, loading, signOut, user, isDemo } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
