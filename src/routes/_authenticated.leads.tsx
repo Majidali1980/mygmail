@@ -6,6 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { ScheduleFollowupDialog } from "@/components/ScheduleFollowupDialog";
 import { Clock } from "lucide-react";
+import { DEMO_LEADS, demoBlocked } from "@/lib/demo";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
 type Status = Database["public"]["Enums"]["lead_status"];
@@ -26,17 +27,22 @@ const STATUS_COLORS: Record<Status, string> = {
 const STATUSES: Status[] = ["new", "sent", "replied", "interested", "follow_up", "closed"];
 
 function LeadsPage() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [scheduling, setScheduling] = useState<Lead | null>(null);
 
   useEffect(() => {
+    if (isDemo) {
+      setLeads(DEMO_LEADS);
+      return;
+    }
     if (!user) return;
     supabase.from("leads").select("*").order("created_at", { ascending: false })
       .then(({ data }) => setLeads(data ?? []));
-  }, [user]);
+  }, [user, isDemo]);
 
   async function updateStatus(id: string, status: Status) {
+    if (demoBlocked(isDemo)) return;
     setLeads((p) => p.map((l) => l.id === id ? { ...l, status } : l));
     await supabase.from("leads").update({ status }).eq("id", id);
   }
