@@ -35,7 +35,7 @@ type Extraction = {
 };
 
 function Dashboard() {
-  const { session, user, loading } = useAuth();
+  const { session, user, loading, isDemo } = useAuth();
   const extractFn = useServerFn(extractPoster);
   const generateFn = useServerFn(generateEmail);
   const draftFn = useServerFn(draftFromSubject);

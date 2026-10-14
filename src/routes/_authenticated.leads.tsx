@@ -89,7 +89,7 @@ function LeadsPage() {
                   <Button
                     size="sm" variant="ghost"
                     disabled={!l.contact_email}
-                    onClick={() => setScheduling(l)}
+                    onClick={() => { if (!demoBlocked(isDemo)) setScheduling(l); }}
                   >
                     <Clock className="h-3 w-3 mr-1" /> Follow-up
                   </Button>
