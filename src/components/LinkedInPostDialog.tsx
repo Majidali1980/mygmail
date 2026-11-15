@@ -7,7 +7,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { draftLinkedInPost, publishLinkedInPost } from "@/lib/linkedin.functions";
 
-type LeadLike = { business_name: string | null; website?: string | null; category?: string | null; notes?: string | null } | null;
+type LeadLike = { business_name: string | null; website?: string | null; services?: string[] | null; notes?: string | null } | null;
 
 export function LinkedInPostDialog({ lead, onClose }: { lead: LeadLike; onClose: () => void }) {
   const draft = useServerFn(draftLinkedInPost);
@@ -19,7 +19,7 @@ export function LinkedInPostDialog({ lead, onClose }: { lead: LeadLike; onClose:
     if (!lead) return;
     setBusy("draft");
     try {
-      const r = await draft({ data: { business: lead.business_name ?? "a local business", website: lead.website ?? undefined, industry: lead.category ?? undefined, notes: lead.notes ?? undefined } });
+      const r = await draft({ data: { business: lead.business_name ?? "a local business", website: lead.website ?? undefined, industry: lead.services?.join(", ") || undefined, notes: lead.notes ?? undefined } });
       setText(r.text);
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   }
