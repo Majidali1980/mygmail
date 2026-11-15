@@ -39,7 +39,8 @@ export const draftLinkedInPost = createServerFn({ method: "POST" })
       method: "POST",
       headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "raw" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-6-astra",
+        reasoning_effort: "low",
         messages: [
           { role: "system", content: "You write LinkedIn posts for a digital marketing agency. 80-150 words, friendly and professional, no hype, short paragraphs, 2-4 relevant hashtags at the end. Never invent results or client claims. Return only the post text." },
           { role: "user", content: `Write a post inspired by this business (a ${data.industry ?? "local"} business): ${data.business}${data.website ? ` (${data.website})` : ""}. Notes: ${data.notes ?? "none"}. Share a useful marketing tip for businesses like this.` },
