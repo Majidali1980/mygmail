@@ -78,7 +78,7 @@ function Dashboard() {
   }, [loading, session]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isDemo) return;
     supabase.from("poster_templates").select("id,name,prompt_template,source_path").order("created_at", { ascending: false })
       .then(({ data }) => {
         const list = (data ?? []) as PosterTpl[];
@@ -231,7 +231,7 @@ function Dashboard() {
   }
 
   async function handleGeneratePoster() {
-    if (!user || !extraction || !pickedTemplate) return;
+    if (!user || !extraction || !pickedTemplate || demoBlocked(isDemo)) return;
     const tpl = templates.find((t) => t.id === pickedTemplate);
     if (!tpl) { toast.error("Pick a poster template first"); return; }
     setStep("poster");
@@ -283,7 +283,7 @@ function Dashboard() {
   }
 
   async function handleSend() {
-    if (!recipient || !subject || !body || !user) return;
+    if (!recipient || !subject || !body || !user || demoBlocked(isDemo)) return;
     setStep("sending");
     try {
       const res = await sendFn({
@@ -313,7 +313,7 @@ function Dashboard() {
   }
 
   async function handleBulkSend() {
-    if (!user || !subject || !body || bulkRecipients.length === 0) return;
+    if (!user || !subject || !body || bulkRecipients.length === 0 || demoBlocked(isDemo)) return;
     setStep("sending");
     setProgress({ done: 0, total: bulkRecipients.length });
     const files = attachments.map((a) => ({ filename: a.name, mimeType: a.mimeType, dataBase64: a.dataBase64 }));
