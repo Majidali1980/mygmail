@@ -313,7 +313,7 @@ function Dashboard() {
   }
 
   async function handleBulkSend() {
-    if (!user || !subject || !body || bulkRecipients.length === 0) return;
+    if (!user || !subject || !body || bulkRecipients.length === 0 || demoBlocked(isDemo)) return;
     setStep("sending");
     setProgress({ done: 0, total: bulkRecipients.length });
     const files = attachments.map((a) => ({ filename: a.name, mimeType: a.mimeType, dataBase64: a.dataBase64 }));
