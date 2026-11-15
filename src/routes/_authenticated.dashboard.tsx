@@ -78,7 +78,7 @@ function Dashboard() {
   }, [loading, session]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isDemo) return;
     supabase.from("poster_templates").select("id,name,prompt_template,source_path").order("created_at", { ascending: false })
       .then(({ data }) => {
         const list = (data ?? []) as PosterTpl[];
