@@ -231,7 +231,7 @@ function Dashboard() {
   }
 
   async function handleGeneratePoster() {
-    if (!user || !extraction || !pickedTemplate) return;
+    if (!user || !extraction || !pickedTemplate || demoBlocked(isDemo)) return;
     const tpl = templates.find((t) => t.id === pickedTemplate);
     if (!tpl) { toast.error("Pick a poster template first"); return; }
     setStep("poster");
@@ -283,7 +283,7 @@ function Dashboard() {
   }
 
   async function handleSend() {
-    if (!recipient || !subject || !body || !user) return;
+    if (!recipient || !subject || !body || !user || demoBlocked(isDemo)) return;
     setStep("sending");
     try {
       const res = await sendFn({
