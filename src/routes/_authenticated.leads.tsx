@@ -5,7 +5,8 @@ import { useAuth } from "@/lib/auth";
 import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { ScheduleFollowupDialog } from "@/components/ScheduleFollowupDialog";
-import { Clock } from "lucide-react";
+import { Clock, Linkedin } from "lucide-react";
+import { LinkedInPostDialog } from "@/components/LinkedInPostDialog";
 import { DEMO_LEADS, demoBlocked } from "@/lib/demo";
 
 type Lead = Database["public"]["Tables"]["leads"]["Row"];
@@ -30,6 +31,7 @@ function LeadsPage() {
   const { user, isDemo } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [scheduling, setScheduling] = useState<Lead | null>(null);
+  const [posting, setPosting] = useState<Lead | null>(null);
 
   useEffect(() => {
     if (isDemo) {
@@ -93,6 +95,9 @@ function LeadsPage() {
                   >
                     <Clock className="h-3 w-3 mr-1" /> Follow-up
                   </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { if (!demoBlocked(isDemo)) setPosting(l); }}>
+                    <Linkedin className="h-3 w-3 mr-1" /> Post
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -100,6 +105,7 @@ function LeadsPage() {
         </table>
       </div>
 
+      <LinkedInPostDialog lead={posting} onClose={() => setPosting(null)} />
       <ScheduleFollowupDialog
         open={!!scheduling}
         onOpenChange={(b) => !b && setScheduling(null)}

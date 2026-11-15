@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, Plus, Sparkles, Trash2, Pencil, Send, AlertTriangle } from "lucide-react";
 import {
   summarizeBusiness, suggestSegments, findCompanies, findPeople, findEmails, writeEmails, startOutreach,
@@ -87,6 +88,21 @@ function ProspectingPage() {
     setCompanies(c.data ?? []); setPeople((p.data ?? []) as Person[]);
   }, [selected]);
   useEffect(() => { loadCampaignData(); }, [loadCampaignData]);
+
+  const [roles, setRoles] = useState("Founder, CEO, Owner, Marketing Director, Head of Marketing");
+  const [personEdit, setPersonEdit] = useState<Partial<Person> | null>(null);
+  async function savePerson() {
+    if (!personEdit || !user || !selected) return;
+    if (!personEdit.company_id) return toast.error("Pick a company");
+    const row = { first_name: personEdit.first_name || null, last_name: personEdit.last_name || null, title: personEdit.title || null,
+      email: personEdit.email || null, company_id: personEdit.company_id,
+      email_status: (personEdit.email ? "pending" : (personEdit.email_status ?? "pending")) as Person["email_status"], email_source: "manual" };
+    const { error } = personEdit.id
+      ? await supabase.from("people").update(row).eq("id", personEdit.id)
+      : await supabase.from("people").insert({ ...row, user_id: user.id, campaign_id: selected });
+    if (error) return toast.error(error.message);
+    toast.success("Person saved"); setPersonEdit(null); loadCampaignData();
+  }
 
   async function run<T>(key: string, fn: () => Promise<T>, done?: (r: T) => void) {
     setBusy(key);
@@ -216,8 +232,23 @@ function ProspectingPage() {
                   {busy === "co" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 4. Find companies
                 </Button>
                 <p className="text-xs text-muted-foreground">Companies are researched by AI — double-check before sending.</p>
-                <SimpleTable head={["Company", "Website", "Size", "Country"]}
-                  rows={companies.map((c) => [c.name, c.website ? <a className="text-primary underline" href={c.website.startsWith("http") ? c.website : `https://${c.website}`} target="_blank" rel="noreferrer">{c.domain ?? c.website}</a> : "—", c.size ?? "—", c.country ?? "—"])} />
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">Deep search roles:</span>
+                  <Input className="h-8 max-w-md text-xs" value={roles} onChange={(e) => setRoles(e.target.value)} />
+                </div>
+                <SimpleTable head={["Company", "Website", "Size", "Country", "Deep search people"]}
+                  rows={companies.map((c) => {
+                    const roleQ = roles.split(",").map((r) => `"${r.trim()}"`).filter((r) => r.length > 2).join(" OR ");
+                    const li = encodeURIComponent(`site:linkedin.com/in "${c.name}" (${roleQ})`);
+                    const team = c.domain ? encodeURIComponent(`site:${c.domain} (team OR leadership OR about OR founder)`) : "";
+                    return [c.name, c.website ? <a className="text-primary underline" href={c.website.startsWith("http") ? c.website : `https://${c.website}`} target="_blank" rel="noreferrer">{c.domain ?? c.website}</a> : "—", c.size ?? "—", c.country ?? "—",
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${li}`}>LinkedIn people</a>
+                        {team && <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${team}`}>Team page</a>}
+                        <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name)}`}>LinkedIn search</a>
+                        <button className="text-primary underline" onClick={() => setPersonEdit({ company_id: c.id })}>+ Add person</button>
+                      </div>];
+                  })} />
               </TabsContent>
 
               <TabsContent value="people" className="space-y-3">
@@ -229,6 +260,7 @@ function ProspectingPage() {
                     {busy === "em" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 6. Find & verify emails
                   </Button>
                 </div>
+                <Button size="sm" variant="outline" disabled={!companies.length} onClick={() => setPersonEdit({ company_id: companies[0]?.id })}><Plus className="mr-1 h-3 w-3" />Add real person</Button>
                 <SimpleTable head={["Name", "Title", "Company", "Email", "Status", "Profile"]}
                   rows={people.map((p) => {
                     const name = [p.first_name, p.last_name].filter(Boolean).join(" ");
@@ -239,6 +271,7 @@ function ProspectingPage() {
                       <div className="flex gap-2 text-xs">
                         <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.linkedin.com/search/results/people/?keywords=${q}`}>LinkedIn</a>
                         <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${q}`}>Google</a>
+                        <button className="text-primary underline" onClick={() => setPersonEdit(p)}>Edit</button>
                       </div>,
                     ];
                   })} />
@@ -305,6 +338,23 @@ function ProspectingPage() {
           )}
         </section>
       </div>
+      <Dialog open={!!personEdit} onOpenChange={(o) => !o && setPersonEdit(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{personEdit?.id ? "Edit person" : "Add real person"}</DialogTitle></DialogHeader>
+          {personEdit && <div className="grid gap-3">
+            <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={personEdit.company_id ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, company_id: e.target.value })}>
+              {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="First name" value={personEdit.first_name ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, first_name: e.target.value })} />
+              <Input placeholder="Last name" value={personEdit.last_name ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, last_name: e.target.value })} />
+            </div>
+            <Input placeholder="Job title" value={personEdit.title ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, title: e.target.value })} />
+            <Input placeholder="Email (verified in step 6)" value={personEdit.email ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, email: e.target.value })} />
+          </div>}
+          <DialogFooter><Button variant="outline" onClick={() => setPersonEdit(null)}>Cancel</Button><Button onClick={savePerson}>Save</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
