@@ -93,8 +93,9 @@ function ProspectingPage() {
   const [personEdit, setPersonEdit] = useState<Partial<Person> | null>(null);
   async function savePerson() {
     if (!personEdit || !user || !selected) return;
+    if (!personEdit.company_id) return toast.error("Pick a company");
     const row = { first_name: personEdit.first_name || null, last_name: personEdit.last_name || null, title: personEdit.title || null,
-      email: personEdit.email || null, company_id: personEdit.company_id ?? null,
+      email: personEdit.email || null, company_id: personEdit.company_id,
       email_status: (personEdit.email ? "pending" : (personEdit.email_status ?? "pending")) as Person["email_status"], email_source: "manual" };
     const { error } = personEdit.id
       ? await supabase.from("people").update(row).eq("id", personEdit.id)
