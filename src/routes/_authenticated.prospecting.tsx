@@ -90,17 +90,17 @@ function ProspectingPage() {
   useEffect(() => { loadCampaignData(); }, [loadCampaignData]);
 
   const [roles, setRoles] = useState("Founder, CEO, Owner, Marketing Director, Head of Marketing");
-  const [editing, setEditing] = useState<Partial<Person> | null>(null);
+  const [personEdit, setPersonEdit] = useState<Partial<Person> | null>(null);
   async function savePerson() {
-    if (!editing || !user || !selected) return;
-    const row = { first_name: editing.first_name || null, last_name: editing.last_name || null, title: editing.title || null,
-      email: editing.email || null, company_id: editing.company_id ?? null,
-      email_status: (editing.email ? "pending" : (editing.email_status ?? "pending")) as Person["email_status"], email_source: "manual" };
-    const { error } = editing.id
-      ? await supabase.from("people").update(row).eq("id", editing.id)
+    if (!personEdit || !user || !selected) return;
+    const row = { first_name: personEdit.first_name || null, last_name: personEdit.last_name || null, title: personEdit.title || null,
+      email: personEdit.email || null, company_id: personEdit.company_id ?? null,
+      email_status: (personEdit.email ? "pending" : (personEdit.email_status ?? "pending")) as Person["email_status"], email_source: "manual" };
+    const { error } = personEdit.id
+      ? await supabase.from("people").update(row).eq("id", personEdit.id)
       : await supabase.from("people").insert({ ...row, user_id: user.id, campaign_id: selected });
     if (error) return toast.error(error.message);
-    toast.success("Person saved"); setEditing(null); loadCampaignData();
+    toast.success("Person saved"); setPersonEdit(null); loadCampaignData();
   }
 
   async function run<T>(key: string, fn: () => Promise<T>, done?: (r: T) => void) {
@@ -245,7 +245,7 @@ function ProspectingPage() {
                         <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${li}`}>LinkedIn people</a>
                         {team && <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${team}`}>Team page</a>}
                         <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(c.name)}`}>LinkedIn search</a>
-                        <button className="text-primary underline" onClick={() => setEditing({ company_id: c.id })}>+ Add person</button>
+                        <button className="text-primary underline" onClick={() => setPersonEdit({ company_id: c.id })}>+ Add person</button>
                       </div>];
                   })} />
               </TabsContent>
@@ -259,7 +259,7 @@ function ProspectingPage() {
                     {busy === "em" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 6. Find & verify emails
                   </Button>
                 </div>
-                <Button size="sm" variant="outline" disabled={!companies.length} onClick={() => setEditing({ company_id: companies[0]?.id })}><Plus className="mr-1 h-3 w-3" />Add real person</Button>
+                <Button size="sm" variant="outline" disabled={!companies.length} onClick={() => setPersonEdit({ company_id: companies[0]?.id })}><Plus className="mr-1 h-3 w-3" />Add real person</Button>
                 <SimpleTable head={["Name", "Title", "Company", "Email", "Status", "Profile"]}
                   rows={people.map((p) => {
                     const name = [p.first_name, p.last_name].filter(Boolean).join(" ");
@@ -270,7 +270,7 @@ function ProspectingPage() {
                       <div className="flex gap-2 text-xs">
                         <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.linkedin.com/search/results/people/?keywords=${q}`}>LinkedIn</a>
                         <a className="text-primary underline" target="_blank" rel="noreferrer" href={`https://www.google.com/search?q=${q}`}>Google</a>
-                        <button className="text-primary underline" onClick={() => setEditing(p)}>Edit</button>
+                        <button className="text-primary underline" onClick={() => setPersonEdit(p)}>Edit</button>
                       </div>,
                     ];
                   })} />
@@ -337,21 +337,21 @@ function ProspectingPage() {
           )}
         </section>
       </div>
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+      <Dialog open={!!personEdit} onOpenChange={(o) => !o && setPersonEdit(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editing?.id ? "Edit person" : "Add real person"}</DialogTitle></DialogHeader>
-          {editing && <div className="grid gap-3">
-            <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={editing.company_id ?? ""} onChange={(e) => setEditing({ ...editing, company_id: e.target.value })}>
+          <DialogHeader><DialogTitle>{personEdit?.id ? "Edit person" : "Add real person"}</DialogTitle></DialogHeader>
+          {personEdit && <div className="grid gap-3">
+            <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={personEdit.company_id ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, company_id: e.target.value })}>
               {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <div className="grid grid-cols-2 gap-3">
-              <Input placeholder="First name" value={editing.first_name ?? ""} onChange={(e) => setEditing({ ...editing, first_name: e.target.value })} />
-              <Input placeholder="Last name" value={editing.last_name ?? ""} onChange={(e) => setEditing({ ...editing, last_name: e.target.value })} />
+              <Input placeholder="First name" value={personEdit.first_name ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, first_name: e.target.value })} />
+              <Input placeholder="Last name" value={personEdit.last_name ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, last_name: e.target.value })} />
             </div>
-            <Input placeholder="Job title" value={editing.title ?? ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
-            <Input placeholder="Email (verified in step 6)" value={editing.email ?? ""} onChange={(e) => setEditing({ ...editing, email: e.target.value })} />
+            <Input placeholder="Job title" value={personEdit.title ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, title: e.target.value })} />
+            <Input placeholder="Email (verified in step 6)" value={personEdit.email ?? ""} onChange={(e) => setPersonEdit({ ...personEdit, email: e.target.value })} />
           </div>}
-          <DialogFooter><Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button><Button onClick={savePerson}>Save</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setPersonEdit(null)}>Cancel</Button><Button onClick={savePerson}>Save</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
