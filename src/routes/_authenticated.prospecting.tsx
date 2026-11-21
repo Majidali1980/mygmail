@@ -46,7 +46,9 @@ function ProspectingPage() {
   const [summary, setSummary] = useState("");
   const [bizName, setBizName] = useState("");
   const [address, setAddress] = useState("");
-  const [limit, setLimit] = useState(30);
+  const [limit, setLimit] = useState(30);   
+  const [count, setCount] = useState(25);   
+    const [location, setLocation] = useState("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -221,17 +223,17 @@ function ProspectingPage() {
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <TabsList>
                   <TabsTrigger value="companies">Companies ({companies.length})</TabsTrigger>
-                  <TabsTrigger value="people">People ({people.length})</TabsTrigger>
+                  <TabsTrigger value="people">People ({people.length} · {people.filter((p) => p.email_status === "valid").length} verified)</TabsTrigger>
                   <TabsTrigger value="emails">Emails</TabsTrigger>
                   <TabsTrigger value="suppression">Suppression ({suppressed.length})</TabsTrigger>
                 </TabsList>
               </div>
 
               <TabsContent value="companies" className="space-y-3">
-                <Button size="sm" disabled={!!busy} onClick={() => run("co", () => fns.companies({ data: { campaignId: selected, count: 10 } }), (r) => { toast.success(`${r.added} companies added`); loadCampaignData(); })}>
+                <div className="flex flex-wrap items-end gap-2"><div><Label>Count</Label><Input type="number" min={1} max={25} value={count} onChange={(e) => setCount(Math.min(25, Math.max(1, Number(e.target.value) || 25)))} className="w-20" /></div><div><Label>City / location (optional)</Label><Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="City / location" /></div><Button size="sm" disabled={!!busy} onClick={() => run("co", () => fns.companies({ data: { campaignId: selected, count, location: location || undefined } }), (r) => { toast.success(`${r.added} companies added`); loadCampaignData(); })}>
                   {busy === "co" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 4. Find companies
                 </Button>
-                <p className="text-xs text-muted-foreground">Companies are researched by AI — double-check before sending.</p>
+                </div><p className="text-xs text-muted-foreground">Companies are researched by AI — double-check before sending.</p>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="text-muted-foreground">Deep search roles:</span>
                   <Input className="h-8 max-w-md text-xs" value={roles} onChange={(e) => setRoles(e.target.value)} />
