@@ -78,7 +78,7 @@ export const suggestSegments = createServerFn({ method: "POST" })
 export const findCompanies = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { campaignId: string; count?: number }) =>
-    z.object({ campaignId: z.string().uuid(), count: z.number().int().min(1).max(25).optional() }).parse(d))
+    z.object({ campaignId: z.string().uuid(), count: z.number().int().min(1).max(25).optional(), location: z.string().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase;
     const { data: camp, error } = await sb.from("campaigns").select("*").eq("id", data.campaignId).single();
@@ -87,9 +87,10 @@ export const findCompanies = createServerFn({ method: "POST" })
     const skip = (existing ?? []).map((c) => c.name).join(", ");
     const out = await aiJson(
       'You are a B2B researcher. List real, existing companies that match the segment. Only include companies you are confident exist, with their real website. Return {"companies":[{"name":string,"website":string,"size":string,"country":string,"description":string}]}. size like "11-50".',
-      `Segment: ${camp.name}\nDescription: ${camp.description ?? ""}\nReturn ${data.count ?? 10} companies.${skip ? ` Exclude: ${skip}` : ""}`,
+      `Segment: ${camp.name}\nDescription: ${camp.description ?? ""}${data.location ? `
+Location: ${data.location}` : ""}\nReturn ${data.count ?? 10} companies. Prefer independent, locally-owned businesses; do not include large national chains or franchises.${skip ? ` Exclude: ${skip}` : ""}`,
     );
-    const rows = (Array.isArray(out.companies) ? out.companies : []).map((c: any) => {
+    const existingNames = new Set((existing ?? []).map((c) => String(c.name ?? "").toLowerCase())); const rows = (Array.isArray(out.companies) ? out.companies : []).filter((c: any) => !existingNames.has(String(c.name ?? "").toLowerCase())).map((c: any) => {
       const website = String(c.website ?? "").trim();
       let domain: string | null = null;
       try { domain = new URL(website.startsWith("http") ? website : `https://${website}`).hostname.replace(/^www\./, ""); } catch { /* */ }
@@ -249,7 +250,7 @@ export const startOutreach = createServerFn({ method: "POST" })
     const limit = prof.daily_limit ?? 30;
     const since = new Date(); since.setUTCHours(0, 0, 0, 0);
     const { count } = await sb.from("people").select("id", { count: "exact", head: true })
-      .eq("outreach_status", "sent").gte("sent_at", since.toISOString());
+      .eq("user_id", context.userId).eq("outreach_status", "sent").gte("sent_at", since.toISOString());
     const remaining = Math.max(0, limit - (count ?? 0));
     if (!remaining) return { sent: 0, skipped: 0, failed: 0, remaining: 0 };
     const { data: sup } = await sb.from("suppression_list").select("email");
